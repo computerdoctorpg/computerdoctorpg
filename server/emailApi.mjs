@@ -16,13 +16,22 @@ const EMAIL_TYPES = {
   },
 };
 
+const stripEnv = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  let v = value.trim();
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+    v = v.slice(1, -1);
+  }
+  return v.trim();
+};
+
 const getSmtpConfig = () => ({
-  host: process.env.SMTP_HOST || '',
+  host: stripEnv(process.env.SMTP_HOST),
   port: Number(process.env.SMTP_PORT || 465),
   secure: process.env.SMTP_SECURE !== 'false',
   auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
+    user: stripEnv(process.env.SMTP_USER),
+    pass: stripEnv(process.env.SMTP_PASS),
   },
 });
 
@@ -39,8 +48,8 @@ export async function sendOperaterWelcomeEmail({ to, displayName, password }) {
     throw new Error('SMTP nije podešen na serveru.');
   }
 
-  const fromName = process.env.SMTP_FROM_NAME || 'Computer Doctor';
-  const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
+  const fromName = stripEnv(process.env.SMTP_FROM_NAME) || 'Computer Doctor';
+  const fromEmail = stripEnv(process.env.SMTP_FROM) || stripEnv(process.env.SMTP_USER);
   const from = `${fromName} <${fromEmail}>`;
   const loginUrl = getAppLoginUrl();
   const greeting = displayName ? `Poštovani/a ${displayName}` : 'Poštovani/a';
@@ -140,8 +149,8 @@ export async function handleSendTicketEmail(req, res) {
       return;
     }
 
-    const fromName = process.env.SMTP_FROM_NAME || 'Computer Doctor';
-    const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
+    const fromName = stripEnv(process.env.SMTP_FROM_NAME) || 'Computer Doctor';
+    const fromEmail = stripEnv(process.env.SMTP_FROM) || stripEnv(process.env.SMTP_USER);
     const from = `${fromName} <${fromEmail}>`;
 
     const transporter = nodemailer.createTransport(getSmtpConfig());
