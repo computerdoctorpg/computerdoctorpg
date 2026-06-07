@@ -225,7 +225,7 @@ const RepairTicketsDashboard = () => {
     if (!printableTicket && !printableVhsTicket && !printableDeliveryNote) return;
 
     const emailJob = printEmailRef.current;
-    const delay = emailJob ? 1600 : 800;
+    const delay = emailJob ? 2500 : 800;
 
     const timer = setTimeout(async () => {
       if (emailJob) {

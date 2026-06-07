@@ -203,7 +203,12 @@ Hvala na povjerenju!`;
           contentType: 'application/pdf',
         },
       ],
+      headers: {
+        'X-Mailer': 'Computer Doctor Servis',
+      },
     });
+
+    console.log(`Ticket email sent to ${to} (ticket #${ticketId})`);
 
     res.writeHead(200);
     res.end(JSON.stringify({ ok: true, message: `Email poslat na ${to}` }));

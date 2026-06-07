@@ -74,7 +74,7 @@ const EditPrijemniListDialog = ({
     setShowPreview(startWithPreview);
     setPrintInEnglish(false);
     setEnglishPreview(null);
-    setSendEmailToCustomer(!!ticket.customerEmail?.trim());
+    setSendEmailToCustomer(true);
   }, [ticket?.id, isOpen, startWithPreview]);
 
   useEffect(() => {
@@ -105,6 +105,9 @@ const EditPrijemniListDialog = ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    if (name === 'customerEmail' && value.trim()) {
+      setSendEmailToCustomer(true);
+    }
   };
 
   const handleSave = async () => {
