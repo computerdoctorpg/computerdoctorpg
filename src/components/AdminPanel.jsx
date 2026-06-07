@@ -180,7 +180,8 @@ const AdminPanel = () => {
       </div>
 
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="bg-slate-800 border border-slate-700 mb-6">
+        <div className="overflow-x-auto max-w-full -mx-1 px-1 pb-1 mb-6">
+          <TabsList className="bg-slate-800 border border-slate-700 w-max min-w-full flex-nowrap inline-flex">
           <TabsTrigger value="users" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2 text-slate-300">
             <Users className="w-4 h-4" />
             Operateri
@@ -194,6 +195,7 @@ const AdminPanel = () => {
             Backup
           </TabsTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="users" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

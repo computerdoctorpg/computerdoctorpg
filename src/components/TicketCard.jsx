@@ -118,7 +118,7 @@ const TicketCard = ({
       transition={{ duration: 0.25, delay: index * 0.03 }}
       onClick={() => onClick(ticket)}
       className={`group bg-slate-800/70 backdrop-blur-sm rounded-xl border border-slate-700/80 overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-900/10 transition-all cursor-pointer flex flex-col ${
-        compact ? 'w-[300px] sm:w-[320px] shrink-0' : ''
+        compact ? 'w-[min(calc(100vw-2rem),320px)] sm:w-[320px] shrink-0' : ''
       }`}
     >
       {/* Header */}

@@ -115,7 +115,7 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       <Card className="w-full max-w-md bg-slate-800 border-slate-700 text-white shadow-2xl">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto bg-blue-600/20 p-3 rounded-full w-fit mb-4 relative">

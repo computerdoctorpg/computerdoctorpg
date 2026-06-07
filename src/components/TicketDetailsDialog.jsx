@@ -209,7 +209,7 @@ const TicketDetailsDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-3 border-b border-slate-700 pb-4">
             <div className="bg-blue-600/20 p-2 rounded-lg">
@@ -528,7 +528,7 @@ const TicketDetailsDialog = ({
                 
                 {/* Financial Inputs — samo admin */}
                 {isAdmin && (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                      <Label className="text-slate-300 mb-1.5 block flex items-center gap-1">
                        <Calculator className="w-3 h-3 text-yellow-400" /> Procena (€)

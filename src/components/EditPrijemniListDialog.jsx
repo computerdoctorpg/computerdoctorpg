@@ -143,7 +143,7 @@ const EditPrijemniListDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isSaving && !isPrinting) onClose(); }}>
-      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
+      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[92dvh] sm:max-h-[92vh] overflow-hidden flex flex-col p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-400" />
@@ -306,7 +306,7 @@ const EditPrijemniListDialog = ({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-700">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-3 border-t border-slate-700 pb-[env(safe-area-inset-bottom)]">
           <div className="flex flex-col gap-2 mr-auto">
             <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
               <input

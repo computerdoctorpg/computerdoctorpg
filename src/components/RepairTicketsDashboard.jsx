@@ -998,37 +998,38 @@ const RepairTicketsDashboard = () => {
         </div>
       )}
 
-      <div className='min-h-screen p-4 md:p-8 dashboard-container'>
+      <div className='min-h-screen p-3 sm:p-4 md:p-8 pb-[max(1rem,env(safe-area-inset-bottom))] dashboard-container'>
         <div className='max-w-7xl mx-auto'>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-              <TabsList className="bg-slate-800/80 border border-slate-700 p-1 h-auto w-fit">
-                <TabsTrigger value="tickets" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                  <LayoutGrid className="w-4 h-4" />
+              <div className="overflow-x-auto max-w-full -mx-1 px-1 pb-1">
+                <TabsList className="bg-slate-800/80 border border-slate-700 p-1 h-auto w-max min-w-full flex-nowrap inline-flex">
+                <TabsTrigger value="tickets" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                  <LayoutGrid className="w-4 h-4 shrink-0" />
                   Nalozi
                 </TabsTrigger>
-                <TabsTrigger value="clients" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
-                  <Users className="w-4 h-4" />
+                <TabsTrigger value="clients" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
+                  <Users className="w-4 h-4 shrink-0" />
                   Klijenti
                 </TabsTrigger>
-                <TabsTrigger value="warranty" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
-                  <Shield className="w-4 h-4" />
-                  Garantni Rok
+                <TabsTrigger value="warranty" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                  <Shield className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Garantni </span>Rok
                 </TabsTrigger>
-                <TabsTrigger value="vhs" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
-                  <Film className="w-4 h-4" />
-                  VHS Kasete
+                <TabsTrigger value="vhs" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                  <Film className="w-4 h-4 shrink-0" />
+                  VHS
                 </TabsTrigger>
                 {isAdmin && (
-                  <TabsTrigger value="finances" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-                    <BarChart3 className="w-4 h-4" />
+                  <TabsTrigger value="finances" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                    <BarChart3 className="w-4 h-4 shrink-0" />
                     Finansije
                   </TabsTrigger>
                 )}
                 {isAdmin && (
-                  <TabsTrigger value="recycle" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-red-600 data-[state=active]:text-white">
-                    <Trash2 className="w-4 h-4" />
+                  <TabsTrigger value="recycle" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-red-600 data-[state=active]:text-white">
+                    <Trash2 className="w-4 h-4 shrink-0" />
                     Korpa
                     {deletedTickets.length > 0 && (
                       <span className="ml-1 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
@@ -1038,6 +1039,7 @@ const RepairTicketsDashboard = () => {
                   </TabsTrigger>
                 )}
               </TabsList>
+              </div>
 
               <div className="flex items-center gap-2 shrink-0">
                 <NewTicketMenu

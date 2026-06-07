@@ -134,7 +134,7 @@ const VhsTabContent = ({
             <div className="relative">
               <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
               <select value={filterMonth} onChange={(e) => { setFilterMonth(e.target.value); setFilterDay('all'); }}
-                className="pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white appearance-none cursor-pointer min-w-[180px]">
+                className="pl-10 pr-8 py-3 w-full lg:w-auto bg-slate-900/50 border border-slate-600 rounded-lg text-white appearance-none cursor-pointer min-w-0 lg:min-w-[180px]">
                 <option value="all">Svi Meseci</option>
                 {availableMonths.map((m) => <option key={m} value={m}>{formatMonthDisplay(m)}</option>)}
               </select>
@@ -142,7 +142,7 @@ const VhsTabContent = ({
             <div className="relative">
               <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
               <select value={filterDay} onChange={(e) => setFilterDay(e.target.value)} disabled={availableDays.length === 0}
-                className="pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white appearance-none cursor-pointer min-w-[200px] disabled:opacity-50">
+                className="pl-10 pr-8 py-3 w-full lg:w-auto bg-slate-900/50 border border-slate-600 rounded-lg text-white appearance-none cursor-pointer min-w-0 lg:min-w-[200px] disabled:opacity-50">
                 <option value="all">Svi Dani</option>
                 {availableDays.map((d) => <option key={d} value={d}>{formatDayKeyDisplay(d)}</option>)}
               </select>
@@ -150,7 +150,7 @@ const VhsTabContent = ({
             <div className="relative">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
               <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-                className="pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white appearance-none cursor-pointer min-w-[160px]">
+                className="pl-10 pr-8 py-3 w-full lg:w-auto bg-slate-900/50 border border-slate-600 rounded-lg text-white appearance-none cursor-pointer min-w-0 lg:min-w-[160px]">
                 <option value="all">Svi Statusi</option>
                 <option value="pending">Na Čekanju</option>
                 <option value="in-progress">U Radu</option>
