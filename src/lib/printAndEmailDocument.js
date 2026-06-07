@@ -7,6 +7,8 @@ export async function sendDocumentEmail(emailJob) {
     throw new Error('Podaci dokumenta nisu proslijeđeni za email.');
   }
 
+  console.log('[email] Slanje na:', emailJob.to, '| ticket id:', emailJob.ticketId);
+
   await sendTicketEmail({
     to: emailJob.to,
     type: emailJob.type,
@@ -15,46 +17,40 @@ export async function sendDocumentEmail(emailJob) {
     ticket: slimTicketForEmail(emailJob.ticket),
     filename: emailJob.filename,
   });
+
+  console.log('[email] Poslato uspješno na:', emailJob.to);
   return emailJob.to;
 }
 
-async function waitForPrintablePage() {
-  for (let i = 0; i < 20; i += 1) {
-    if (document.querySelector('.printable-content [data-pdf-page]')) return;
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  throw new Error('Prijemnica nije učitana za štampu.');
+async function waitForPrintContent(ms = 800) {
+  await new Promise((r) => setTimeout(r, ms));
 }
 
 /** Štampa lijepu HTML prijemnici/otpremnicu preko browser print dijaloga. */
 export async function printHtmlDocument() {
-  await new Promise((r) => setTimeout(r, 350));
   window.print();
 }
 
 /**
- * 1. Render HTML prijemnice za štampu
- * 2. Email → server generiše PDF i šalje SMTP (isti put kao test skripta)
+ * 1. Email → server generiše PDF (odmah, ne čeka render)
+ * 2. Render HTML prijemnice za štampu
  * 3. Browser print dijalog
  */
 export async function runPrintAndEmailJob({
-  document,
+  document: docData,
   emailJob,
   renderForPrint,
   toastRef,
   successLabel = 'Dokument poslat na',
 }) {
-  if (!document?.ticket) {
+  if (!docData?.ticket) {
     throw new Error('Podaci dokumenta nisu proslijeđeni.');
   }
 
-  if (renderForPrint) {
-    flushSync(renderForPrint);
-    await waitForPrintablePage();
-  }
-
+  // Email šaljemo ODMAH — ne čekamo render
   if (emailJob) {
-    const ticket = emailJob.ticket ?? document.ticket;
+    const ticket = emailJob.ticket ?? docData.ticket;
+    console.log('[email] emailJob:', { to: emailJob.to, type: emailJob.type, ticketId: emailJob.ticketId });
     try {
       const sentTo = await sendDocumentEmail({ ...emailJob, ticket });
       toastRef?.current?.({
@@ -63,16 +59,21 @@ export async function runPrintAndEmailJob({
         className: 'bg-emerald-600 text-white border-none',
       });
     } catch (error) {
-      console.error('Email send failed:', error);
+      console.error('[email] Greška:', error);
       toastRef?.current?.({
         variant: 'destructive',
         title: 'Email nije poslat',
         description: error.message || 'Proverite SMTP podešavanja na serveru.',
       });
     }
+  } else {
+    console.log('[email] emailJob je null — email se ne šalje (sendEmail=false ili nema adrese)');
   }
 
+  // Render za štampu
   if (renderForPrint) {
-    await printHtmlDocument();
+    flushSync(renderForPrint);
+    await waitForPrintContent(400);
+    window.print();
   }
 }

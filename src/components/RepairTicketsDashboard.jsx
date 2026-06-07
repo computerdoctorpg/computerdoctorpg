@@ -688,6 +688,7 @@ const RepairTicketsDashboard = () => {
       const saved = await savePrijemniListChanges(saveTicket);
 
       const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
+      console.log('[prijemnica] sendEmail flag:', payload?.sendEmail, '| email:', saveTicket.customerEmail);
       const emailJob = payload?.sendEmail && saveTicket.customerEmail?.trim()
         ? {
             type: 'intake',
