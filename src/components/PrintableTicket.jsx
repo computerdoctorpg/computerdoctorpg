@@ -224,11 +224,12 @@ const PrintableTicket = ({ ticket }) => {
         </div>
 
         <div
-          className="flex gap-8 text-[10px] py-2.5 px-4 border-[1.5px] border-black rounded-md shrink-0"
-          style={{ backgroundColor: BRAND.tint, ...printExact }}
+          className="flex gap-6 py-3 px-4 border-[2px] border-black rounded-md shrink-0 bg-white"
+          style={printExact}
         >
-          <div className="flex items-center gap-2">
-            <DataPolicyPrint ticket={ticket} className="text-[10px]" />
+          <div className="flex items-center gap-2 shrink-0">
+            <Database className="w-5 h-5 shrink-0 text-red-600" style={printExact} />
+            <DataPolicyPrint ticket={ticket} />
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <ShoppingBag className={`w-5 h-5 shrink-0 ${ticket.hasBag ? 'text-black' : 'text-gray-400'}`} />

@@ -4,6 +4,11 @@ import { getDataPolicyLabels, resolveKeepData } from '@/lib/dataPolicy';
 
 export { resolveKeepData };
 
+const printExact = {
+  WebkitPrintColorAdjust: 'exact',
+  printColorAdjust: 'exact',
+};
+
 export function DataPolicyFields({ keepData, onChange, disabled = false }) {
   return (
     <div className={`bg-slate-900/40 p-3 rounded-lg border border-slate-700 ${disabled ? 'opacity-50' : ''}`}>
@@ -48,12 +53,26 @@ export function DataPolicyPrint({ ticket, className = '' }) {
   const { deleteLabel, keepLabel, keep } = getDataPolicyLabels(ticket);
 
   return (
-    <span className={`inline-flex items-center gap-2 font-bold uppercase tracking-wide ${className}`}>
-      <span className={keep ? 'line-through text-gray-400 font-semibold' : 'text-black'}>
+    <span className={`inline-flex items-center gap-3 font-extrabold uppercase tracking-wider ${className}`}>
+      <span
+        className={`text-[14px] leading-none ${
+          keep
+            ? 'line-through text-gray-400 decoration-2 decoration-gray-400'
+            : 'text-red-600'
+        }`}
+        style={printExact}
+      >
         {deleteLabel}
       </span>
-      <span className="text-gray-400 font-normal">/</span>
-      <span className={!keep ? 'line-through text-gray-400 font-semibold' : 'text-black'}>
+      <span className="text-gray-400 font-normal text-[12px]">/</span>
+      <span
+        className={`text-[14px] leading-none ${
+          !keep
+            ? 'line-through text-gray-400 decoration-2 decoration-gray-400'
+            : 'text-red-600'
+        }`}
+        style={printExact}
+      >
         {keepLabel}
       </span>
     </span>

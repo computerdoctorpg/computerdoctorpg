@@ -9,8 +9,21 @@ export function getDataPolicyLabels(ticket) {
 }
 
 export const dataPolicyPdfStyles = {
-  active: { fontSize: 7, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
-  struck: { fontSize: 7, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', textDecoration: 'line-through', color: '#9ca3af' },
-  separator: { fontSize: 7, color: '#9ca3af' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  active: {
+    fontSize: 11,
+    fontFamily: 'NotoSans',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    color: '#dc2626',
+  },
+  struck: {
+    fontSize: 9,
+    fontFamily: 'NotoSans',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    textDecoration: 'line-through',
+    color: '#9ca3af',
+  },
+  separator: { fontSize: 10, color: '#9ca3af', fontFamily: 'NotoSans' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 };

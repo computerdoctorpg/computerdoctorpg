@@ -3,11 +3,18 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderToBuffer } from '@react-pdf/renderer';
+import { registerPdfFonts } from '@/pdf/pdfFonts.js';
 import { IntakeReceiptPdfDocument } from '@/pdf/IntakeReceiptPdfDocument.jsx';
 import { DeliveryNotePdfDocument } from '@/pdf/DeliveryNotePdfDocument.jsx';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(__dirname, '..');
+const fontsDir = join(projectRoot, 'public', 'fonts');
+
+registerPdfFonts({
+  regularSrc: join(fontsDir, 'NotoSans-Regular.ttf'),
+  boldSrc: join(fontsDir, 'NotoSans-Bold.ttf'),
+});
 
 function readLogoDataUrl(filename) {
   const filePath = join(projectRoot, 'public', 'images', filename);
