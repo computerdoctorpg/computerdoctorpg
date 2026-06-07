@@ -1,50 +1,45 @@
-import { flushSync } from 'react-dom';
-import { generatePdfFromElement } from '@/lib/generateTicketPdf';
+import { generateDocumentPdf, printPdfBlob } from '@/lib/generateTicketPdf.jsx';
 import { sendTicketEmail } from '@/lib/sendTicketEmail';
 
-const waitForPrintElement = (type, timeoutMs = 8000) =>
-  new Promise((resolve, reject) => {
-    const deadline = Date.now() + timeoutMs;
-    const check = () => {
-      const el = document.querySelector(`[data-print-type="${type}"]`);
-      if (el) resolve(el);
-      else if (Date.now() > deadline) reject(new Error('PDF dokument nije spreman za slanje.'));
-      else requestAnimationFrame(check);
-    };
-    check();
-  });
+export async function sendDocumentEmail(emailJob, pdfBlob) {
+  if (!emailJob?.ticket) {
+    throw new Error('Podaci dokumenta nisu proslijeđeni za PDF.');
+  }
 
-export async function sendDocumentEmail(emailJob) {
-  const el = await waitForPrintElement(emailJob.type);
-  const pdfBlob = await generatePdfFromElement(el);
+  const blob = pdfBlob ?? await generateDocumentPdf(emailJob.type, emailJob.ticket);
   await sendTicketEmail({
     to: emailJob.to,
     type: emailJob.type,
     ticketId: emailJob.ticketId,
     customerName: emailJob.customerName,
-    pdfBlob,
+    pdfBlob: blob,
     filename: emailJob.filename,
   });
   return emailJob.to;
 }
 
+export async function printDocument({ type, ticket }) {
+  await printDocumentPdf(type, ticket);
+}
+
 /**
- * Renderuje dokument u DOM, opciono šalje email, zatim otvara dijalog za štampu.
+ * Generiše react-pdf, opciono šalje email, zatim otvara dijalog za štampu PDF-a.
  */
 export async function runPrintAndEmailJob({
-  render,
+  document,
   emailJob,
   toastRef,
-  skipPrintEffectRef,
   successLabel = 'Dokument poslat na',
 }) {
-  if (skipPrintEffectRef) skipPrintEffectRef.current = true;
+  if (!document?.ticket) {
+    throw new Error('Podaci dokumenta nisu proslijeđeni.');
+  }
 
-  flushSync(render);
+  const pdfBlob = await generateDocumentPdf(document.type, document.ticket);
 
   if (emailJob) {
     try {
-      const sentTo = await sendDocumentEmail(emailJob);
+      const sentTo = await sendDocumentEmail(emailJob, pdfBlob);
       toastRef?.current?.({
         title: 'Email poslat',
         description: `${successLabel} ${sentTo}`,
@@ -60,6 +55,5 @@ export async function runPrintAndEmailJob({
     }
   }
 
-  await new Promise((r) => setTimeout(r, emailJob ? 400 : 300));
-  window.print();
+  await printPdfBlob(pdfBlob);
 }

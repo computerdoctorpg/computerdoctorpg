@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Laptop, User, Phone, Hash, Lock, Database, ShoppingBag, AlertCircle, Battery, Loader2, MessageSquare, Shield, FileText, Calendar, Mail } from 'lucide-react';
+import { Laptop, User, Phone, Hash, Lock, ShoppingBag, AlertCircle, Battery, Loader2, MessageSquare, Shield, FileText, Calendar, Mail } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { DeviceBrandFields } from '@/components/DeviceBrandFields';
+import { DataPolicyFields } from '@/components/DataPolicyFields';
 import {
   OTHER_BRAND_LABEL,
   combineDeviceName,
@@ -405,24 +406,11 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className={`flex items-center space-x-2 bg-slate-900/30 p-3 rounded-lg border border-slate-700 h-full ${isSubmitting ? 'opacity-50' : ''}`}>
-                <input
-                  type="checkbox"
-                  id="keepData"
-                  name="keepData"
-                  checked={formData.keepData}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                  className="h-5 w-5 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-slate-900 disabled:cursor-not-allowed"
-                />
-                <Label 
-                  htmlFor="keepData" 
-                  className={`text-slate-300 flex items-center gap-2 select-none ${!isSubmitting ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                >
-                  <Database className='w-4 h-4 text-yellow-500' />
-                  <span className='font-medium'>Sačuvati Podatke (Bez Formatiranja)</span>
-                </Label>
-              </div>
+              <DataPolicyFields
+                keepData={formData.keepData}
+                onChange={(value) => setFormData((prev) => ({ ...prev, keepData: value }))}
+                disabled={isSubmitting}
+              />
 
               <div className={`flex items-center space-x-3 bg-slate-900/30 p-3 rounded-lg border border-slate-700 h-full ${isSubmitting ? 'opacity-50' : ''}`}>
                 <div className="flex items-center gap-2 shrink-0">

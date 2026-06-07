@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
   User, Phone, Laptop, Hash, Battery, Lock, MessageSquare,
-  Database, ShoppingBag, Printer, Save, Loader2, FileText, Shield, Calendar, Languages, Mail
+  ShoppingBag, Printer, Save, Loader2, FileText, Shield, Calendar, Languages, Mail
 } from 'lucide-react';
 import PrintableTicket from '@/components/PrintableTicket';
 import { DeviceBrandFields } from '@/components/DeviceBrandFields';
+import { DataPolicyFields } from '@/components/DataPolicyFields';
 import { prepareServiceTicketForEnglishPrint } from '@/lib/translateForPrint';
 import {
   DEVICE_BRANDS,
@@ -306,11 +307,11 @@ const EditPrijemniListDialog = ({
               </section>
 
               <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 bg-slate-900/40 p-3 rounded-lg border border-slate-700 cursor-pointer">
-                  <input type="checkbox" name="keepData" checked={formData.keepData} onChange={handleChange} className="h-4 w-4" />
-                  <Database className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm text-slate-300">Sačuvati podatke</span>
-                </label>
+                <DataPolicyFields
+                  keepData={formData.keepData}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, keepData: value }))}
+                  disabled={isSaving || isPrinting}
+                />
                 <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-700 space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" name="hasBag" checked={formData.hasBag} onChange={handleChange} className="h-4 w-4" />

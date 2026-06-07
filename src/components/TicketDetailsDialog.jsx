@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { canDeleteTickets, canEditDocuments } from '@/lib/permissions';
 import { fetchTicketsByClientId } from '@/lib/db';
 import { buildCompletionViberMessage, openViberChat } from '@/lib/viberUtils';
+import { DataPolicyPrint } from '@/components/DataPolicyFields';
 
 const TicketDetailsDialog = ({ 
   isOpen, 
@@ -461,8 +462,8 @@ const TicketDetailsDialog = ({
                <div className="flex flex-col gap-4">
                   <div>
                     <p className="text-slate-400 text-xs mb-1">Podaci</p>
-                    <div className={`px-3 py-2 rounded border ${ticket.keepData ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-400" : "border-slate-700 bg-slate-800 text-slate-500"} font-bold text-sm text-center`}>
-                      {ticket.keepData ? "ČUVATI PODATKE" : "BRISATI"}
+                    <div className="px-3 py-2 rounded border border-slate-700 bg-slate-800 text-center">
+                      <DataPolicyPrint ticket={ticket} className="text-sm justify-center" />
                     </div>
                   </div>
                   <div>

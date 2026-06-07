@@ -1,9 +1,10 @@
 import React from 'react';
 import {
-  MapPin, Phone, Mail, Clock, CheckSquare, Square, ShoppingBag, AlertTriangle,
+  MapPin, Phone, Mail, Clock, ShoppingBag, AlertTriangle,
 } from 'lucide-react';
 import { getPrintStrings, getTicketLocale } from '@/lib/printTranslations';
 import { parseDeviceBrandModel } from '@/lib/ticketUtils';
+import { DataPolicyPrint } from '@/components/DataPolicyFields';
 
 const BRAND = {
   green: '#16a34a',
@@ -229,14 +230,7 @@ const PrintableTicket = ({ ticket }) => {
           style={{ backgroundColor: BRAND.tint, ...printExact }}
         >
           <div className="flex items-center gap-2">
-            {ticket.keepData ? (
-              <CheckSquare className="w-5 h-5" style={{ color: BRAND.greenDark }} />
-            ) : (
-              <Square className="w-5 h-5 text-gray-400" />
-            )}
-            <span className={`font-bold uppercase tracking-wide ${ticket.keepData ? 'text-black' : 'text-gray-500'}`}>
-              {t.keepData}
-            </span>
+            <DataPolicyPrint ticket={ticket} className="text-[10px]" />
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <ShoppingBag className={`w-5 h-5 shrink-0 ${ticket.hasBag ? 'text-black' : 'text-gray-400'}`} />

@@ -8,6 +8,24 @@ import { handleBackup } from './server/backupApi.mjs';
 import { handleRecycleBin } from './server/recycleBinApi.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
+function loadDotEnv() {
+  const envPath = join(__dirname, '.env');
+  if (!existsSync(envPath)) return;
+  readFileSync(envPath, 'utf8').split('\n').forEach((line) => {
+    const match = line.match(/^([^#=]+)=(.*)$/);
+    if (!match) return;
+    const key = match[1].trim();
+    let value = match[2].trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (!process.env[key]) process.env[key] = value;
+  });
+}
+
+loadDotEnv();
+
 const distDir = join(__dirname, 'dist');
 const port = Number(process.env.PORT || 3000);
 

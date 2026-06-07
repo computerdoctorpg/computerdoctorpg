@@ -9,9 +9,7 @@ import InvoiceDialog from '@/components/InvoiceDialog';
 import EditPrijemniListDialog from '@/components/EditPrijemniListDialog';
 import EditVhsReceiptDialog from '@/components/EditVhsReceiptDialog';
 import TicketDetailsDialog from '@/components/TicketDetailsDialog';
-import PrintableTicket from '@/components/PrintableTicket';
 import PrintableVhsTicket from '@/components/PrintableVhsTicket';
-import PrintableDeliveryNote from '@/components/PrintableDeliveryNote';
 import FinanceDashboard from '@/components/FinanceDashboard';
 import WarrantyTabContent from '@/components/WarrantyTabContent';
 import VhsTabContent from '@/components/VhsTabContent';
@@ -24,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { canEditDocuments } from '@/lib/permissions';
 import { upsertClient, createTicket, updateTicket, fetchAllTickets, fetchDeletedTickets, deleteTicket, restoreTicket, permanentlyDeleteTicket, getRecycleBinMode, isSoftDeleteDbSupported, probeSoftDeleteSupport } from '@/lib/db';
-import { runPrintAndEmailJob } from '@/lib/printAndEmailDocument';
+import { runPrintAndEmailJob, printDocument } from '@/lib/printAndEmailDocument';
 import { ticketMatchesSearch, ticketMatchesBrandModel, getClientTicketCounts, getMonthKey, getDayKey, formatDayKeyDisplay, getUniqueBrands } from '@/lib/ticketUtils';
 import {
   AlertDialog,
@@ -57,9 +55,7 @@ const RepairTicketsDashboard = () => {
   const [isDeletedLoading, setIsDeletedLoading] = useState(false);
   const [recycleBinMode, setRecycleBinMode] = useState('local');
 
-  const [printableTicket, setPrintableTicket] = useState(null);
   const [printableVhsTicket, setPrintableVhsTicket] = useState(null);
-  const [printableDeliveryNote, setPrintableDeliveryNote] = useState(null);
   const skipPrintEffectRef = useRef(false);
   const toastRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -222,20 +218,18 @@ const RepairTicketsDashboard = () => {
   };
 
   useEffect(() => {
-    if (!printableTicket && !printableVhsTicket && !printableDeliveryNote) return;
+    if (!printableVhsTicket) return;
     if (skipPrintEffectRef.current) return;
 
     const timer = setTimeout(() => {
       window.print();
       setTimeout(() => {
-        setPrintableTicket(null);
         setPrintableVhsTicket(null);
-        setPrintableDeliveryNote(null);
       }, 500);
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [printableTicket, printableVhsTicket, printableDeliveryNote]);
+  }, [printableVhsTicket]);
 
   const addTicket = async (ticketData) => {
     if (!user) {
@@ -454,11 +448,13 @@ const RepairTicketsDashboard = () => {
 
       if (newStatus === 'completed' && updatedTicket) {
         const completedTicketData = tickets.find(t => t.id === ticketId);
-        setPrintableTicket(null);
-        setPrintableDeliveryNote({
+        const ticketForDoc = {
           ...completedTicketData,
           ...updates,
-          dispatchNoteNumber: updatedTicket.dispatch_note_number
+          dispatchNoteNumber: updatedTicket.dispatch_note_number,
+        };
+        printDocument({ type: 'delivery', ticket: ticketForDoc }).catch((err) => {
+          console.error('Auto print delivery note failed:', err);
         });
       }
     } catch (error) {
@@ -651,8 +647,6 @@ const RepairTicketsDashboard = () => {
       const saved = await saveVhsChanges(saveTicket);
       setIsVhsEditOpen(false);
       setIsNewVhsTicket(false);
-      setPrintableTicket(null);
-      setPrintableDeliveryNote(null);
       setPrintableVhsTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje prije štampe.' });
@@ -681,44 +675,31 @@ const RepairTicketsDashboard = () => {
   const handlePrijemniPrint = async (payload) => {
     const saveTicket = payload?.saveTicket ?? payload;
     const printTicket = payload?.printTicket ?? payload;
-    const emailJob = payload?.sendEmail && saveTicket.customerEmail?.trim()
-      ? {
-          type: 'intake',
-          to: saveTicket.customerEmail.trim(),
-          ticketId: null,
-          customerName: `${saveTicket.customerName || ''} ${saveTicket.customerSurname || ''}`.trim(),
-          filename: null,
-        }
-      : null;
 
     try {
       const saved = await savePrijemniListChanges(saveTicket);
       setIsPrijemniEditOpen(false);
       setIsNewPrijemniTicket(false);
 
-      if (emailJob) {
-        emailJob.ticketId = saved.id;
-        emailJob.filename = `Prijemnica_${saved.id}.pdf`;
-      }
+      const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
+      const emailJob = payload?.sendEmail && saveTicket.customerEmail?.trim()
+        ? {
+            type: 'intake',
+            to: saveTicket.customerEmail.trim(),
+            ticketId: saved.id,
+            customerName: `${saveTicket.customerName || ''} ${saveTicket.customerSurname || ''}`.trim(),
+            filename: `Prijemnica_${saved.id}.pdf`,
+            ticket: ticketForDoc,
+          }
+        : null;
 
       await runPrintAndEmailJob({
-        render: () => {
-          setPrintableDeliveryNote(null);
-          setPrintableVhsTicket(null);
-          setPrintableTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
-        },
+        document: { type: 'intake', ticket: ticketForDoc },
         emailJob,
         toastRef,
-        skipPrintEffectRef,
         successLabel: 'Prijemnica poslata na',
       });
-
-      setTimeout(() => {
-        setPrintableTicket(null);
-        skipPrintEffectRef.current = false;
-      }, 500);
     } catch (error) {
-      skipPrintEffectRef.current = false;
       console.error('Error saving before print:', error);
       toast({
         variant: 'destructive',
@@ -772,6 +753,7 @@ const RepairTicketsDashboard = () => {
   };
 
   const handlePrintDeliveryNote = async (ticket, options = {}) => {
+    const ticketForDoc = { ...ticket };
     const emailJob = options.sendEmail && ticket.customerEmail?.trim()
       ? {
           type: 'delivery',
@@ -779,25 +761,16 @@ const RepairTicketsDashboard = () => {
           ticketId: ticket.dispatchNoteNumber || ticket.id,
           customerName: `${ticket.customerName || ''} ${ticket.customerSurname || ''}`.trim(),
           filename: `Otpremnica_${ticket.dispatchNoteNumber || ticket.id}.pdf`,
+          ticket: ticketForDoc,
         }
       : null;
 
     await runPrintAndEmailJob({
-      render: () => {
-        setPrintableTicket(null);
-        setPrintableVhsTicket(null);
-        setPrintableDeliveryNote({ ...ticket });
-      },
+      document: { type: 'delivery', ticket: ticketForDoc },
       emailJob,
       toastRef,
-      skipPrintEffectRef,
       successLabel: 'Otpremnica poslata na',
     });
-
-    setTimeout(() => {
-      setPrintableDeliveryNote(null);
-      skipPrintEffectRef.current = false;
-    }, 500);
   };
 
   const handleTicketDeleteClick = (ticket) => {
@@ -973,19 +946,9 @@ const RepairTicketsDashboard = () => {
         }
       `}</style>
 
-      {printableTicket && (
-        <div className="printable-content hidden" data-print-type="intake">
-          <PrintableTicket ticket={printableTicket} />
-        </div>
-      )}
       {printableVhsTicket && (
         <div className="printable-content hidden">
           <PrintableVhsTicket ticket={printableVhsTicket} />
-        </div>
-      )}
-      {printableDeliveryNote && (
-        <div className="printable-content hidden" data-print-type="delivery">
-          <PrintableDeliveryNote ticket={printableDeliveryNote} />
         </div>
       )}
 

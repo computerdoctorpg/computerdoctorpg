@@ -1,5 +1,6 @@
 import React from 'react';
-import { MapPin, Phone, Mail, Settings, Banknote, Clock, CheckSquare, Square, ShoppingBag } from 'lucide-react';
+import { MapPin, Phone, Mail, Settings, Banknote, Clock, ShoppingBag } from 'lucide-react';
+import { DataPolicyPrint } from '@/components/DataPolicyFields';
 
 const PrintableDeliveryNote = ({ ticket }) => {
   if (!ticket) return null;
@@ -145,8 +146,7 @@ const PrintableDeliveryNote = ({ ticket }) => {
         {/* Checkboxes for accessories/data */}
         <div className="flex gap-8 text-xs pt-6 px-2">
            <div className="flex items-center gap-2">
-            {(ticket.keepData || ticket.keep_data) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 text-gray-300" />}
-            <span className={`font-semibold ${(ticket.keepData || ticket.keep_data) ? 'text-black' : 'text-gray-500'}`}>Podaci sačuvani</span>
+            <DataPolicyPrint ticket={ticket} className="text-xs" />
           </div>
           <div className="flex items-center gap-2">
             {(ticket.hasBag || ticket.has_bag) ? <ShoppingBag className="w-5 h-5 text-black" /> : <ShoppingBag className="w-5 h-5 text-gray-300" />}
