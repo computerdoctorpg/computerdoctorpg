@@ -9,7 +9,9 @@ import InvoiceDialog from '@/components/InvoiceDialog';
 import EditPrijemniListDialog from '@/components/EditPrijemniListDialog';
 import EditVhsReceiptDialog from '@/components/EditVhsReceiptDialog';
 import TicketDetailsDialog from '@/components/TicketDetailsDialog';
+import PrintableTicket from '@/components/PrintableTicket';
 import PrintableVhsTicket from '@/components/PrintableVhsTicket';
+import PrintableDeliveryNote from '@/components/PrintableDeliveryNote';
 import FinanceDashboard from '@/components/FinanceDashboard';
 import WarrantyTabContent from '@/components/WarrantyTabContent';
 import VhsTabContent from '@/components/VhsTabContent';
@@ -22,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { canEditDocuments } from '@/lib/permissions';
 import { upsertClient, createTicket, updateTicket, fetchAllTickets, fetchDeletedTickets, deleteTicket, restoreTicket, permanentlyDeleteTicket, getRecycleBinMode, isSoftDeleteDbSupported, probeSoftDeleteSupport } from '@/lib/db';
-import { runPrintAndEmailJob, printDocument } from '@/lib/printAndEmailDocument';
+import { runPrintAndEmailJob, printHtmlDocument } from '@/lib/printAndEmailDocument';
 import { ticketMatchesSearch, ticketMatchesBrandModel, getClientTicketCounts, getMonthKey, getDayKey, formatDayKeyDisplay, getUniqueBrands } from '@/lib/ticketUtils';
 import {
   AlertDialog,
@@ -55,7 +57,9 @@ const RepairTicketsDashboard = () => {
   const [isDeletedLoading, setIsDeletedLoading] = useState(false);
   const [recycleBinMode, setRecycleBinMode] = useState('local');
 
+  const [printableTicket, setPrintableTicket] = useState(null);
   const [printableVhsTicket, setPrintableVhsTicket] = useState(null);
+  const [printableDeliveryNote, setPrintableDeliveryNote] = useState(null);
   const skipPrintEffectRef = useRef(false);
   const toastRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -453,9 +457,13 @@ const RepairTicketsDashboard = () => {
           ...updates,
           dispatchNoteNumber: updatedTicket.dispatch_note_number,
         };
-        printDocument({ type: 'delivery', ticket: ticketForDoc }).catch((err) => {
-          console.error('Auto print delivery note failed:', err);
-        });
+        printHtmlDocument(() => {
+          setPrintableTicket(null);
+          setPrintableVhsTicket(null);
+          setPrintableDeliveryNote(ticketForDoc);
+        })
+          .then(() => setTimeout(() => setPrintableDeliveryNote(null), 500))
+          .catch((err) => console.error('Auto print delivery note failed:', err));
       }
     } catch (error) {
       console.error("Error updating ticket status:", error);
@@ -696,9 +704,16 @@ const RepairTicketsDashboard = () => {
       await runPrintAndEmailJob({
         document: { type: 'intake', ticket: ticketForDoc },
         emailJob,
+        renderForPrint: () => {
+          setPrintableDeliveryNote(null);
+          setPrintableVhsTicket(null);
+          setPrintableTicket(ticketForDoc);
+        },
         toastRef,
         successLabel: 'Prijemnica poslata na',
       });
+
+      setTimeout(() => setPrintableTicket(null), 500);
     } catch (error) {
       console.error('Error saving before print:', error);
       toast({
@@ -768,9 +783,16 @@ const RepairTicketsDashboard = () => {
     await runPrintAndEmailJob({
       document: { type: 'delivery', ticket: ticketForDoc },
       emailJob,
+      renderForPrint: () => {
+        setPrintableTicket(null);
+        setPrintableVhsTicket(null);
+        setPrintableDeliveryNote(ticketForDoc);
+      },
       toastRef,
       successLabel: 'Otpremnica poslata na',
     });
+
+    setTimeout(() => setPrintableDeliveryNote(null), 500);
   };
 
   const handleTicketDeleteClick = (ticket) => {
@@ -946,9 +968,19 @@ const RepairTicketsDashboard = () => {
         }
       `}</style>
 
+      {printableTicket && (
+        <div className="printable-content hidden">
+          <PrintableTicket ticket={printableTicket} />
+        </div>
+      )}
       {printableVhsTicket && (
         <div className="printable-content hidden">
           <PrintableVhsTicket ticket={printableVhsTicket} />
+        </div>
+      )}
+      {printableDeliveryNote && (
+        <div className="printable-content hidden">
+          <PrintableDeliveryNote ticket={printableDeliveryNote} />
         </div>
       )}
 

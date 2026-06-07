@@ -6,59 +6,61 @@ import { PDF_COLORS, getAssetUrl, formatTicketDate, displayVal } from '@/pdf/pdf
 import { resolveKeepData, dataPolicyPdfStyles } from '@/lib/dataPolicy';
 
 const s = StyleSheet.create({
-  page: { paddingTop: 18, paddingBottom: 14, paddingHorizontal: 20, fontSize: 8, fontFamily: 'Helvetica', color: '#000', backgroundColor: '#fff' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 2, borderBottomColor: '#000', paddingBottom: 5, marginBottom: 6 },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  logo: { width: 38, height: 38, objectFit: 'contain' },
-  brandTitle: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: PDF_COLORS.green },
-  tagline: { fontSize: 6.5, color: PDF_COLORS.gray, marginTop: 1 },
-  headerRight: { width: 155, alignItems: 'flex-end' },
-  contactLine: { fontSize: 6.5, marginBottom: 1, textAlign: 'right' },
-  titleBox: { flexDirection: 'row', justifyContent: 'space-between', borderWidth: 2, borderColor: '#000', backgroundColor: PDF_COLORS.tint, paddingVertical: 5, paddingHorizontal: 8, marginBottom: 5, borderRadius: 3 },
-  titleMain: { fontSize: 10, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
-  titleSub: { fontSize: 6, fontFamily: 'Helvetica-Bold', color: PDF_COLORS.greenDark, marginTop: 2, textTransform: 'uppercase' },
-  intakeLabel: { fontSize: 6, color: PDF_COLORS.grayLight, textTransform: 'uppercase', fontFamily: 'Helvetica-Bold' },
-  intakeNumber: { fontSize: 17, fontFamily: 'Helvetica-Bold', marginTop: 1, lineHeight: 1 },
-  intakeDate: { fontSize: 7, color: PDF_COLORS.gray, marginTop: 1 },
-  banner: { borderWidth: 2, borderColor: PDF_COLORS.green, backgroundColor: PDF_COLORS.black, paddingVertical: 4, paddingHorizontal: 6, marginBottom: 5, borderRadius: 3 },
-  bannerText: { color: PDF_COLORS.green, fontSize: 7.5, fontFamily: 'Helvetica-Bold', textAlign: 'center', textTransform: 'uppercase' },
-  twoCol: { flexDirection: 'row', gap: 6, marginBottom: 5 },
+  page: { paddingTop: 22, paddingBottom: 16, paddingHorizontal: 24, fontSize: 8, fontFamily: 'Helvetica', color: '#000', backgroundColor: '#fff' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: '#000', paddingBottom: 6, marginBottom: 8 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  logo: { width: 48, height: 48, objectFit: 'contain' },
+  brandTitle: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: PDF_COLORS.green },
+  tagline: { fontSize: 7.5, color: PDF_COLORS.gray, marginTop: 2, fontFamily: 'Helvetica-Bold' },
+  headerRight: { width: 160, alignItems: 'flex-end' },
+  contactLine: { fontSize: 7, marginBottom: 2, textAlign: 'right' },
+  titleBox: { flexDirection: 'row', justifyContent: 'space-between', borderWidth: 2.5, borderColor: '#000', backgroundColor: PDF_COLORS.tint, paddingVertical: 6, paddingHorizontal: 10, marginBottom: 6, borderRadius: 3 },
+  titleMain: { fontSize: 11, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
+  titleSub: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: PDF_COLORS.greenDark, marginTop: 2, textTransform: 'uppercase' },
+  intakeLabel: { fontSize: 6.5, color: PDF_COLORS.grayLight, textTransform: 'uppercase', fontFamily: 'Helvetica-Bold' },
+  intakeNumber: { fontSize: 20, fontFamily: 'Helvetica-Bold', marginTop: 1, lineHeight: 1 },
+  intakeDate: { fontSize: 7.5, color: PDF_COLORS.gray, marginTop: 2, fontFamily: 'Helvetica-Bold' },
+  banner: { borderWidth: 2.5, borderColor: PDF_COLORS.green, backgroundColor: PDF_COLORS.black, paddingVertical: 5, paddingHorizontal: 8, marginBottom: 6, borderRadius: 3 },
+  bannerCompact: { marginTop: 4, marginBottom: 4, paddingVertical: 4 },
+  bannerText: { color: PDF_COLORS.green, fontSize: 8, fontFamily: 'Helvetica-Bold', textAlign: 'center', textTransform: 'uppercase' },
+  bannerTextCompact: { fontSize: 7 },
+  twoCol: { flexDirection: 'row', gap: 8, marginBottom: 6 },
   col: { flex: 1 },
   section: { borderWidth: 1.5, borderColor: '#000', borderRadius: 3 },
-  sectionHead: { backgroundColor: PDF_COLORS.greenDark, paddingVertical: 3, paddingHorizontal: 6, borderBottomWidth: 2, borderBottomColor: PDF_COLORS.green },
-  sectionHeadDark: { backgroundColor: PDF_COLORS.black },
-  sectionHeadText: { color: '#fff', fontSize: 6.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
-  sectionBody: { paddingVertical: 4, paddingHorizontal: 6, backgroundColor: '#fff' },
-  fieldRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.line, paddingVertical: 2 },
-  fieldLabel: { width: 68, fontSize: 6, fontFamily: 'Helvetica-Bold', color: PDF_COLORS.gray, textTransform: 'uppercase' },
-  fieldValue: { flex: 1, fontSize: 7.5, fontFamily: 'Helvetica-Bold' },
-  fieldMono: { fontFamily: 'Courier-Bold', fontSize: 7 },
-  issueBox: { borderWidth: 2, borderColor: '#000', borderRadius: 3, marginBottom: 5 },
-  issueHead: { backgroundColor: PDF_COLORS.greenDark, paddingVertical: 3, paddingHorizontal: 6 },
-  issueBody: { paddingVertical: 4, paddingHorizontal: 6 },
-  issueText: { fontSize: 8, fontFamily: 'Helvetica-Bold', lineHeight: 1.25 },
-  notesBox: { borderWidth: 1.5, borderColor: '#000', borderRadius: 3, marginBottom: 5 },
-  notesHead: { backgroundColor: PDF_COLORS.black, paddingVertical: 3, paddingHorizontal: 6 },
-  notesBody: { paddingVertical: 4, paddingHorizontal: 6, backgroundColor: PDF_COLORS.tint },
-  notesText: { fontSize: 7.5, lineHeight: 1.25 },
-  flagsRow: { flexDirection: 'row', gap: 16, borderWidth: 1.5, borderColor: '#000', backgroundColor: PDF_COLORS.tint, paddingVertical: 4, paddingHorizontal: 8, marginBottom: 5, borderRadius: 3 },
-  flagText: { fontSize: 7, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
+  sectionHead: { backgroundColor: PDF_COLORS.greenDark, paddingVertical: 4, paddingHorizontal: 8, borderBottomWidth: 3, borderBottomColor: PDF_COLORS.green },
+  sectionHeadDark: { backgroundColor: PDF_COLORS.black, borderBottomColor: PDF_COLORS.green },
+  sectionHeadText: { color: '#fff', fontSize: 7, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
+  sectionBody: { paddingVertical: 5, paddingHorizontal: 8, backgroundColor: '#fff' },
+  fieldRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.line, paddingVertical: 3 },
+  fieldLabel: { width: 72, fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: PDF_COLORS.gray, textTransform: 'uppercase' },
+  fieldValue: { flex: 1, fontSize: 8, fontFamily: 'Helvetica-Bold' },
+  fieldMono: { fontFamily: 'Courier-Bold', fontSize: 7.5 },
+  issueBox: { borderWidth: 2, borderColor: '#000', borderRadius: 3, marginBottom: 6 },
+  issueHead: { backgroundColor: PDF_COLORS.greenDark, paddingVertical: 4, paddingHorizontal: 8 },
+  issueBody: { paddingVertical: 6, paddingHorizontal: 8 },
+  issueText: { fontSize: 9, fontFamily: 'Helvetica-Bold', lineHeight: 1.3 },
+  notesBox: { borderWidth: 1.5, borderColor: '#000', borderRadius: 3, marginBottom: 6 },
+  notesHead: { backgroundColor: PDF_COLORS.black, paddingVertical: 4, paddingHorizontal: 8 },
+  notesBody: { paddingVertical: 5, paddingHorizontal: 8, backgroundColor: PDF_COLORS.tint },
+  notesText: { fontSize: 8, lineHeight: 1.3, fontFamily: 'Helvetica-Bold' },
+  flagsRow: { flexDirection: 'row', gap: 12, borderWidth: 1.5, borderColor: '#000', backgroundColor: PDF_COLORS.tint, paddingVertical: 5, paddingHorizontal: 10, marginBottom: 6, borderRadius: 3, alignItems: 'center' },
+  flagText: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
   flagMuted: { color: PDF_COLORS.grayLight },
-  termsWrap: { borderTopWidth: 2, borderTopColor: '#000', paddingTop: 4, marginBottom: 4, flexGrow: 1 },
-  termsTitle: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', marginBottom: 2 },
-  termsIntro: { fontSize: 6, fontFamily: 'Helvetica-Bold', marginBottom: 2, paddingBottom: 2, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.grayLight, lineHeight: 1.2 },
-  termsCols: { flexDirection: 'row', gap: 8 },
+  termsWrap: { borderTopWidth: 2.5, borderTopColor: '#000', paddingTop: 5, marginBottom: 4 },
+  termsTitle: { fontSize: 7, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', marginBottom: 3 },
+  termsIntro: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', marginBottom: 3, paddingBottom: 3, borderBottomWidth: 0.5, borderBottomColor: PDF_COLORS.grayLight, lineHeight: 1.2 },
+  termsCols: { flexDirection: 'row', gap: 10 },
   termsCol: { flex: 1 },
-  termLine: { fontSize: 5.5, lineHeight: 1.15, marginBottom: 0.5, textAlign: 'justify' },
+  termLine: { fontSize: 6, lineHeight: 1.2, marginBottom: 1, textAlign: 'justify' },
   termBold: { fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
-  signRow: { flexDirection: 'row', gap: 24, marginTop: 3, paddingTop: 3, borderTopWidth: 0.5, borderTopColor: PDF_COLORS.grayLight },
+  signRow: { flexDirection: 'row', gap: 28, marginTop: 4, paddingTop: 4, borderTopWidth: 0.5, borderTopColor: PDF_COLORS.grayLight },
   signCol: { flex: 1, alignItems: 'center' },
-  signLine: { borderBottomWidth: 1.5, borderBottomColor: '#000', height: 16, width: '100%', marginBottom: 2 },
-  signLabel: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
-  signSub: { fontSize: 6, color: PDF_COLORS.gray, marginTop: 1 },
-  footer: { backgroundColor: PDF_COLORS.black, paddingVertical: 4, alignItems: 'center', borderRadius: 2, marginTop: 3 },
-  footerGreen: { color: PDF_COLORS.green, fontFamily: 'Helvetica-Bold', fontSize: 6 },
-  footerWhite: { color: '#fff', fontSize: 6, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
+  signLine: { borderBottomWidth: 1.5, borderBottomColor: '#000', height: 22, width: '100%', marginBottom: 3 },
+  signLabel: { fontSize: 7, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
+  signSub: { fontSize: 6.5, color: PDF_COLORS.gray, marginTop: 1 },
+  footer: { backgroundColor: PDF_COLORS.black, paddingVertical: 5, alignItems: 'center', borderRadius: 2, marginTop: 4 },
+  footerGreen: { color: PDF_COLORS.green, fontFamily: 'Helvetica-Bold', fontSize: 6.5 },
+  footerWhite: { color: '#fff', fontSize: 6.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase' },
 });
 
 const FieldRow = ({ label, value, mono, bold }) => (
@@ -120,7 +122,8 @@ export function IntakeReceiptPdfDocument({ ticket }) {
           </View>
           <View style={s.headerRight}>
             <Text style={s.contactLine}>Bul. Ibrahima Koristovica bb, Podgorica</Text>
-            <Text style={s.contactLine}>068/862-807 · prodaja@computer-doctor.me</Text>
+            <Text style={s.contactLine}>068/862-807</Text>
+            <Text style={s.contactLine}>prodaja@computer-doctor.me</Text>
             <Text style={s.contactLine}>{t.hours}</Text>
           </View>
         </View>
@@ -204,6 +207,12 @@ export function IntakeReceiptPdfDocument({ ticket }) {
           <Text style={s.termsIntro}>{t.termsIntro}</Text>
           <TermsColumns terms={t.terms} boldIndices={t.boldTerms} />
         </View>
+
+        {!isWarranty && (
+          <View style={[s.banner, s.bannerCompact]}>
+            <Text style={[s.bannerText, s.bannerTextCompact]}>{t.diagnosticsBanner}</Text>
+          </View>
+        )}
 
         <View style={s.signRow}>
           <View style={s.signCol}>

@@ -1,4 +1,5 @@
-import { generateDocumentPdf, printPdfBlob } from '@/lib/generateTicketPdf.jsx';
+import { flushSync } from 'react-dom';
+import { generateDocumentPdf } from '@/lib/generateTicketPdf.jsx';
 import { sendTicketEmail } from '@/lib/sendTicketEmail';
 
 export async function sendDocumentEmail(emailJob, pdfBlob) {
@@ -18,16 +19,21 @@ export async function sendDocumentEmail(emailJob, pdfBlob) {
   return emailJob.to;
 }
 
-export async function printDocument({ type, ticket }) {
-  await printDocumentPdf(type, ticket);
+/** Štampa lijepu HTML prijemnici/otpremnicu (PrintableTicket) preko browser print dijaloga. */
+export async function printHtmlDocument(renderForPrint) {
+  flushSync(renderForPrint);
+  await new Promise((r) => setTimeout(r, 500));
+  window.print();
 }
 
 /**
- * Generiše react-pdf, opciono šalje email, zatim otvara dijalog za štampu PDF-a.
+ * Email → react-pdf (vektorski PDF).
+ * Štampa → HTML prijemnica (PrintableTicket / PrintableDeliveryNote) kao prije.
  */
 export async function runPrintAndEmailJob({
   document,
   emailJob,
+  renderForPrint,
   toastRef,
   successLabel = 'Dokument poslat na',
 }) {
@@ -35,10 +41,9 @@ export async function runPrintAndEmailJob({
     throw new Error('Podaci dokumenta nisu proslijeđeni.');
   }
 
-  const pdfBlob = await generateDocumentPdf(document.type, document.ticket);
-
   if (emailJob) {
     try {
+      const pdfBlob = await generateDocumentPdf(emailJob.type, emailJob.ticket);
       const sentTo = await sendDocumentEmail(emailJob, pdfBlob);
       toastRef?.current?.({
         title: 'Email poslat',
@@ -55,5 +60,7 @@ export async function runPrintAndEmailJob({
     }
   }
 
-  await printPdfBlob(pdfBlob);
+  if (renderForPrint) {
+    await printHtmlDocument(renderForPrint);
+  }
 }
