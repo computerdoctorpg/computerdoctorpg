@@ -1,16 +1,17 @@
 export function getSupabaseConfig() {
   const runtimeEnv = typeof window !== 'undefined' ? window.__ENV__ : undefined;
 
+  // Runtime env (Hostinger /env.js) ima prioritet nad Vite build-time vrijednostima
   const supabaseUrl =
-    import.meta.env.VITE_SUPABASE_URL ||
     runtimeEnv?.VITE_SUPABASE_URL ||
     runtimeEnv?.SUPABASE_URL ||
+    import.meta.env.VITE_SUPABASE_URL ||
     '';
 
   const supabaseAnonKey =
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
     runtimeEnv?.VITE_SUPABASE_ANON_KEY ||
     runtimeEnv?.SUPABASE_ANON_KEY ||
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
     '';
 
   return { supabaseUrl, supabaseAnonKey };

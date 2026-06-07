@@ -9,6 +9,7 @@ import {
 import PrintableTicket from '@/components/PrintableTicket';
 import { DeviceBrandFields } from '@/components/DeviceBrandFields';
 import { DataPolicyFields } from '@/components/DataPolicyFields';
+import { useToast } from '@/hooks/use-toast';
 import { prepareServiceTicketForEnglishPrint } from '@/lib/translateForPrint';
 import {
   DEVICE_BRANDS,
@@ -47,6 +48,7 @@ const EditPrijemniListDialog = ({
   isNewTicket = false,
   startWithPreview = false,
 }) => {
+  const { toast } = useToast();
   const [formData, setFormData] = useState(emptyForm);
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -141,21 +143,42 @@ const EditPrijemniListDialog = ({
     }
   };
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     setIsPrinting(true);
-    try {
-      const base = buildTicket();
-      const printTicket = printInEnglish
-        ? (englishPreview || await prepareServiceTicketForEnglishPrint(base))
-        : { ...base, printLocale: 'sr' };
-      await onPrint({
-        saveTicket: base,
-        printTicket,
-        sendEmail: sendEmailToCustomer && !!base.customerEmail?.trim(),
-      });
-    } finally {
-      setIsPrinting(false);
+    const base = buildTicket();
+    const sendEmail = sendEmailToCustomer && !!base.customerEmail?.trim();
+
+    const finish = () => setIsPrinting(false);
+
+    if (printInEnglish && !englishPreview) {
+      prepareServiceTicketForEnglishPrint(base)
+        .then((printTicket) =>
+          onPrint({ saveTicket: base, printTicket, sendEmail }),
+        )
+        .catch((error) => {
+          toast({
+            variant: 'destructive',
+            title: 'Greška',
+            description: error.message || 'Neuspešna priprema za štampu.',
+          });
+        })
+        .finally(finish);
+      return;
     }
+
+    const printTicket = printInEnglish
+      ? { ...englishPreview, printLocale: 'en' }
+      : { ...base, printLocale: 'sr' };
+
+    Promise.resolve(onPrint({ saveTicket: base, printTicket, sendEmail }))
+      .catch((error) => {
+        toast({
+          variant: 'destructive',
+          title: 'Greška',
+          description: error.message || 'Neuspešna štampa.',
+        });
+      })
+      .finally(finish);
   };
 
   const inputClass = 'w-full mt-1 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';

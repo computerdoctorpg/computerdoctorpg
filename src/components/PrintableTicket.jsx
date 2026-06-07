@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  MapPin, Phone, Mail, Clock, ShoppingBag, AlertTriangle,
+  MapPin, Phone, Mail, Clock, ShoppingBag, AlertTriangle, Database,
 } from 'lucide-react';
 import { getPrintStrings, getTicketLocale } from '@/lib/printTranslations';
 import { parseDeviceBrandModel } from '@/lib/ticketUtils';

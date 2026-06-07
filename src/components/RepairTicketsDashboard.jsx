@@ -24,7 +24,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { canEditDocuments } from '@/lib/permissions';
 import { upsertClient, createTicket, updateTicket, fetchAllTickets, fetchDeletedTickets, deleteTicket, restoreTicket, permanentlyDeleteTicket, getRecycleBinMode, isSoftDeleteDbSupported, probeSoftDeleteSupport } from '@/lib/db';
-import { runPrintAndEmailJob, printHtmlDocument } from '@/lib/printAndEmailDocument';
+import { flushSync } from 'react-dom';
+import { runPrintAndEmailJob } from '@/lib/printAndEmailDocument';
 import { ticketMatchesSearch, ticketMatchesBrandModel, getClientTicketCounts, getMonthKey, getDayKey, formatDayKeyDisplay, getUniqueBrands } from '@/lib/ticketUtils';
 import {
   AlertDialog,
@@ -61,6 +62,7 @@ const RepairTicketsDashboard = () => {
   const [printableVhsTicket, setPrintableVhsTicket] = useState(null);
   const [printableDeliveryNote, setPrintableDeliveryNote] = useState(null);
   const toastRef = useRef(null);
+  const deferredPrintRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
@@ -123,6 +125,23 @@ const RepairTicketsDashboard = () => {
   useEffect(() => {
     loadTickets();
   }, [loadTickets, retryCount]);
+
+  useEffect(() => {
+    if (!deferredPrintRef.current) return;
+    if (!printableTicket && !printableVhsTicket && !printableDeliveryNote) return;
+
+    deferredPrintRef.current = false;
+    const timer = setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        setPrintableTicket(null);
+        setPrintableVhsTicket(null);
+        setPrintableDeliveryNote(null);
+      }, 1000);
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [printableTicket, printableVhsTicket, printableDeliveryNote]);
 
   const loadDeletedTickets = useCallback(async () => {
     if (!isAdmin) return [];
@@ -442,13 +461,12 @@ const RepairTicketsDashboard = () => {
           ...updates,
           dispatchNoteNumber: updatedTicket.dispatch_note_number,
         };
-        printHtmlDocument(() => {
+        deferredPrintRef.current = true;
+        flushSync(() => {
           setPrintableTicket(null);
           setPrintableVhsTicket(null);
           setPrintableDeliveryNote(ticketForDoc);
-        })
-          .then(() => setTimeout(() => setPrintableDeliveryNote(null), 500))
-          .catch((err) => console.error('Auto print delivery note failed:', err));
+        });
       }
     } catch (error) {
       console.error("Error updating ticket status:", error);
@@ -636,27 +654,31 @@ const RepairTicketsDashboard = () => {
   const handleVhsPrint = async (payload) => {
     const saveTicket = payload?.saveTicket ?? payload;
     const printTicket = payload?.printTicket ?? payload;
+
     try {
-      const saved = await saveVhsChanges(saveTicket);
-      const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
-
-      setIsVhsEditOpen(false);
-      setIsNewVhsTicket(false);
-
       await runPrintAndEmailJob({
-        document: { type: 'intake', ticket: ticketForDoc },
-        emailJob: null,
         renderForPrint: () => {
+          setIsVhsEditOpen(false);
+          setIsNewVhsTicket(false);
           setPrintableTicket(null);
           setPrintableDeliveryNote(null);
-          setPrintableVhsTicket(ticketForDoc);
+          setPrintableVhsTicket({ ...printTicket });
+        },
+        saveAfterPrint: async () => {
+          const saved = await saveVhsChanges(saveTicket);
+          toast({
+            title: 'Sačuvano',
+            description: 'Prijem snimaka ažuriran.',
+            className: 'bg-green-600 text-white border-none',
+          });
+          return saved;
         },
         toastRef,
       });
 
       setTimeout(() => setPrintableVhsTicket(null), 2000);
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje pre štampe.' });
+      toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje ili štampa.' });
       throw error;
     }
   };
@@ -684,30 +706,34 @@ const RepairTicketsDashboard = () => {
     const printTicket = payload?.printTicket ?? payload;
 
     try {
-      const saved = await savePrijemniListChanges(saveTicket);
-
-      const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
-      const emailJob = payload?.sendEmail && saveTicket.customerEmail?.trim()
-        ? {
+      await runPrintAndEmailJob({
+        renderForPrint: () => {
+          setIsPrijemniEditOpen(false);
+          setIsNewPrijemniTicket(false);
+          setPrintableDeliveryNote(null);
+          setPrintableVhsTicket(null);
+          setPrintableTicket({ ...printTicket });
+        },
+        saveAfterPrint: async () => {
+          const saved = await savePrijemniListChanges(saveTicket);
+          toast({
+            title: 'Sačuvano',
+            description: 'Podaci naloga su ažurirani u bazi.',
+            className: 'bg-green-600 text-white border-none',
+          });
+          return saved;
+        },
+        emailJob: (saved) => {
+          if (!payload?.sendEmail || !saveTicket.customerEmail?.trim() || !saved) return null;
+          const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
+          return {
             type: 'intake',
             to: saveTicket.customerEmail.trim(),
             ticketId: saved.id,
             customerName: `${saveTicket.customerName || ''} ${saveTicket.customerSurname || ''}`.trim(),
             filename: `Prijemnica_${saved.id}.pdf`,
             ticket: ticketForDoc,
-          }
-        : null;
-
-      setIsPrijemniEditOpen(false);
-      setIsNewPrijemniTicket(false);
-
-      await runPrintAndEmailJob({
-        document: { type: 'intake', ticket: ticketForDoc },
-        emailJob,
-        renderForPrint: () => {
-          setPrintableDeliveryNote(null);
-          setPrintableVhsTicket(null);
-          setPrintableTicket(ticketForDoc);
+          };
         },
         toastRef,
         successLabel: 'Prijemnica poslata na',
@@ -715,11 +741,11 @@ const RepairTicketsDashboard = () => {
 
       setTimeout(() => setPrintableTicket(null), 2000);
     } catch (error) {
-      console.error('Error saving before print:', error);
+      console.error('Error during print/save:', error);
       toast({
         variant: 'destructive',
         title: 'Greška',
-        description: error.message || 'Neuspešno čuvanje pre štampe.',
+        description: error.message || 'Neuspešna štampa ili čuvanje.',
       });
       throw error;
     }
@@ -781,7 +807,6 @@ const RepairTicketsDashboard = () => {
       : null;
 
     await runPrintAndEmailJob({
-      document: { type: 'delivery', ticket: ticketForDoc },
       emailJob,
       renderForPrint: () => {
         setPrintableTicket(null);
