@@ -686,8 +686,6 @@ const RepairTicketsDashboard = () => {
 
     try {
       const saved = await savePrijemniListChanges(saveTicket);
-      setIsPrijemniEditOpen(false);
-      setIsNewPrijemniTicket(false);
 
       const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
       const emailJob = payload?.sendEmail && saveTicket.customerEmail?.trim()
@@ -713,6 +711,8 @@ const RepairTicketsDashboard = () => {
         successLabel: 'Prijemnica poslata na',
       });
 
+      setIsPrijemniEditOpen(false);
+      setIsNewPrijemniTicket(false);
       setTimeout(() => setPrintableTicket(null), 1500);
     } catch (error) {
       console.error('Error saving before print:', error);

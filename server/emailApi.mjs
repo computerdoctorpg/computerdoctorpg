@@ -163,7 +163,11 @@ export async function handleSendTicketEmail(req, res) {
       return;
     }
 
-    let pdfBuffer = pdfBase64 ? Buffer.from(pdfBase64, 'base64') : null;
+    let pdfBuffer = pdfBase64 ? Buffer.from(String(pdfBase64), 'base64') : null;
+
+    if (pdfBuffer?.length && pdfBuffer.length < 500) {
+      pdfBuffer = null;
+    }
 
     if (!pdfBuffer?.length && ticket) {
       try {
@@ -224,7 +228,7 @@ Hvala na povjerenju!`;
       },
     });
 
-    console.log(`Ticket email sent to ${to} (ticket #${ticketId})`);
+    console.log(`Ticket email sent to ${to} (ticket #${ticketId}, pdf: ${pdfBuffer.length} bytes)`);
 
     res.writeHead(200);
     res.end(JSON.stringify({ ok: true, message: `Email poslat na ${to}` }));
