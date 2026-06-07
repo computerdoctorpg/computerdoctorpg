@@ -15,7 +15,7 @@ import { loadEnv, TABLES_IN_ORDER, fetchAllRows, BACKUP_FILE, BACKUP_DIR } from 
 const env = loadEnv();
 
 const url = env.OLD_SUPABASE_URL || env.VITE_SUPABASE_URL;
-const anonKey = env.VITE_SUPABASE_ANON_KEY || env.OLD_SUPABASE_ANON_KEY;
+const anonKey = env.OLD_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
 const email = env.OLD_EXPORT_EMAIL;
 const password = env.OLD_EXPORT_PASSWORD;
 const serviceKey = env.OLD_SUPABASE_SERVICE_ROLE_KEY;

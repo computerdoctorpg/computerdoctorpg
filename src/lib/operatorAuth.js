@@ -1,4 +1,5 @@
-const OPERATER_EMAIL_DOMAIN = 'servis.local';
+const OPERATER_EMAIL_DOMAIN = 'computerdoctor.in';
+const OPERATER_EMAIL_PREFIX = 'operater.';
 
 export const normalizeOperatorUsername = (value) =>
   String(value || '')
@@ -14,7 +15,7 @@ export const normalizeOperatorUsername = (value) =>
 export const usernameToOperatorEmail = (username) => {
   const slug = normalizeOperatorUsername(username);
   if (!slug) return '';
-  return `operater.${slug}@${OPERATER_EMAIL_DOMAIN}`;
+  return `${OPERATER_EMAIL_PREFIX}${slug}@${OPERATER_EMAIL_DOMAIN}`;
 };
 
 export const resolveLoginEmail = (login) => {
@@ -28,7 +29,7 @@ export const getOperatorDisplayName = (user) => {
   if (!user) return '';
   if (user.displayName) return user.displayName;
   const email = user.email || '';
-  const match = email.match(/^operater\.(.+)@servis\.local$/i);
+  const match = email.match(/^operater\.(.+)@computerdoctor\.in$/i);
   if (match) {
     return match[1]
       .split(/[._-]+/)
@@ -40,4 +41,4 @@ export const getOperatorDisplayName = (user) => {
 };
 
 export const isOperatorInternalEmail = (email) =>
-  /^operater\.[^@]+@servis\.local$/i.test(String(email || '').trim());
+  /^operater\.[^@]+@computerdoctor\.in$/i.test(String(email || '').trim());

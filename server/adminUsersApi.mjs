@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { readJsonBody } from './emailApi.mjs';
 
-const OPERATER_EMAIL_DOMAIN = 'servis.local';
+const OPERATER_EMAIL_DOMAIN = 'computerdoctor.in';
 
 const normalizeOperatorUsername = (value) =>
   String(value || '')
@@ -66,7 +66,7 @@ async function verifyAdmin(authHeader) {
 function getAdminClient() {
   const { url, serviceKey } = getSupabaseConfig();
   if (!url || !serviceKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY nije podešen na serveru. Dodajte ga u .env.');
+    return null;
   }
 
   return createClient(url, serviceKey, {
@@ -138,6 +138,16 @@ export async function handleAdminUsers(req, res) {
       }
 
       const adminClient = getAdminClient();
+      if (!adminClient) {
+        res.writeHead(503);
+        res.end(JSON.stringify({
+          error: 'MISSING_SERVICE_ROLE_KEY',
+          message:
+            'Dodajte SUPABASE_SERVICE_ROLE_KEY u .env. Kreiranje operatera mora ići preko admin API-ja ' +
+            'da Supabase ne šalje potvrdu na lažne adrese.',
+        }));
+        return;
+      }
 
       const { data: existingProfile } = await adminClient
         .from('users')
@@ -185,6 +195,13 @@ export async function handleAdminUsers(req, res) {
       }
 
       const adminClient = getAdminClient();
+      if (!adminClient) {
+        res.writeHead(503);
+        res.end(JSON.stringify({
+          error: 'Brisanje zahtijeva SUPABASE_SERVICE_ROLE_KEY na serveru.',
+        }));
+        return;
+      }
 
       const { data: profile } = await adminClient
         .from('users')

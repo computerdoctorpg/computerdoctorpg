@@ -17,7 +17,12 @@
     "export-data": "node scripts/export-data.mjs",
     "backup": "node scripts/export-data.mjs",
     "setup-korpa": "node scripts/setup-korpa.mjs",
-    "import-data": "node scripts/import-data.mjs"
+    "import-data": "node scripts/import-data.mjs",
+    "setup-supabase": "node scripts/setup-new-supabase.mjs",
+    "apply-schema": "node scripts/apply-schema.mjs",
+    "apply-schema-api": "node scripts/apply-schema-api.mjs",
+    "schema-editor": "powershell -ExecutionPolicy Bypass -File scripts/open-schema-editor.ps1",
+    "hostinger-env": "node scripts/print-hostinger-env.mjs"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "^1.3.1",
@@ -90,6 +95,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.14.0",
+    "pg": "^8.21.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "terser": "^5.39.0",
