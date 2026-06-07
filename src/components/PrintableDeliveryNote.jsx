@@ -13,6 +13,7 @@ const PrintableDeliveryNote = ({ ticket }) => {
 
   return (
     <div 
+      data-pdf-page
       className="flex flex-col w-[210mm] h-[297mm] bg-white text-black p-[15mm] font-sans box-border relative overflow-hidden z-50"
       style={{ 
         color: 'black', 

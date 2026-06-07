@@ -77,7 +77,7 @@ const RecycleBinTabContent = ({
         animate={{ opacity: 1, y: 0 }}
         className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-red-400" />

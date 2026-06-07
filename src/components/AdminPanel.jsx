@@ -168,7 +168,7 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="app-container p-4 md:p-8 space-y-8">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-purple-600/20 rounded-xl">
           <ShieldAlert className="w-8 h-8 text-purple-500" />
@@ -180,8 +180,8 @@ const AdminPanel = () => {
       </div>
 
       <Tabs defaultValue={defaultTab} className="w-full">
-        <div className="overflow-x-auto max-w-full -mx-1 px-1 pb-1 mb-6">
-          <TabsList className="bg-slate-800 border border-slate-700 w-max min-w-full flex-nowrap inline-flex">
+        <div className="overflow-x-auto max-w-full md:overflow-x-visible -mx-1 px-1 pb-1 md:mx-0 md:px-0 md:pb-0 mb-6">
+          <TabsList className="bg-slate-800 border border-slate-700 w-max min-w-full md:min-w-0 flex-nowrap inline-flex">
           <TabsTrigger value="users" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2 text-slate-300">
             <Users className="w-4 h-4" />
             Operateri

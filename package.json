@@ -26,6 +26,7 @@
     "apply-schema-api": "node scripts/apply-schema-api.mjs",
     "schema-editor": "powershell -ExecutionPolicy Bypass -File scripts/open-schema-editor.ps1",
     "hostinger-env": "node scripts/print-hostinger-env.mjs",
+    "process-logo": "node scripts/process-logo.mjs",
     "hostinger:zip": "node scripts/package-hostinger-zip.mjs",
     "hostinger:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-hostinger-production.ps1"
   },

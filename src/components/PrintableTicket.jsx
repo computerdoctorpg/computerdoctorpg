@@ -3,6 +3,7 @@ import {
   MapPin, Phone, Mail, Clock, CheckSquare, Square, ShoppingBag, AlertTriangle,
 } from 'lucide-react';
 import { getPrintStrings, getTicketLocale } from '@/lib/printTranslations';
+import { parseDeviceBrandModel } from '@/lib/ticketUtils';
 
 const BRAND = {
   green: '#16a34a',
@@ -18,7 +19,7 @@ const printExact = {
 };
 
 const SectionBox = ({ title, children, dark = false, className = '' }) => (
-  <div className={`rounded-md overflow-hidden border-[1.5px] border-black flex flex-col h-full ${className}`} style={printExact}>
+  <div className={`rounded-md overflow-hidden border-[1.5px] border-black flex flex-col ${className}`} style={printExact}>
     <div
       className="px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-white shrink-0"
       style={{
@@ -69,12 +70,38 @@ const DiagnosticsBanner = ({ text, compact = false }) => (
   </div>
 );
 
+const TermsTwoColumns = ({ terms, boldIndices, className = '' }) => {
+  const mid = Math.ceil(terms.length / 2);
+  const columns = [terms.slice(0, mid), terms.slice(mid)];
+
+  return (
+    <div className={`grid grid-cols-2 gap-x-5 ${className}`}>
+      {columns.map((colTerms, colIndex) => (
+        <div key={colIndex}>
+          {colTerms.map((term, rowIndex) => {
+            const termIndex = colIndex === 0 ? rowIndex : rowIndex + mid;
+            return (
+              <p
+                key={termIndex}
+                className={`mb-1 text-justify ${boldIndices.includes(termIndex) ? 'font-extrabold text-black uppercase' : ''}`}
+              >
+                {term}
+              </p>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const PrintableTicket = ({ ticket }) => {
   if (!ticket) return null;
 
   const locale = getTicketLocale(ticket);
   const t = getPrintStrings(locale);
   const isWarranty = ticket.isWarranty;
+  const { brand, model } = parseDeviceBrandModel(ticket.deviceName);
 
   const displayVal = (v) => {
     if (!v || v === 'NEMA' || v === '-') return t.none;
@@ -90,6 +117,7 @@ const PrintableTicket = ({ ticket }) => {
 
   return (
     <div
+      data-pdf-page
       className="flex flex-col w-[210mm] h-[297mm] max-h-[297mm] overflow-hidden bg-white text-black font-sans box-border"
       style={{ padding: '9mm 10mm 8mm', colorScheme: 'light', ...printExact }}
     >
@@ -159,7 +187,8 @@ const PrintableTicket = ({ ticket }) => {
             <FieldRow label="Email" value={ticket.customerEmail || '—'} />
           </SectionBox>
           <SectionBox title={t.deviceSection} dark>
-            <FieldRow label={t.model} value={ticket.deviceName} bold />
+            <FieldRow label={t.brand} value={brand} bold />
+            <FieldRow label={t.model} value={model || ticket.deviceName} bold />
             <FieldRow label={t.laptopSn} value={displayVal(ticket.deviceSerial)} mono />
             <FieldRow label={t.batterySn} value={displayVal(ticket.batterySerial)} mono />
             <FieldRow label={t.chargerSn} value={displayVal(ticket.chargerSerial)} mono />
@@ -225,15 +254,8 @@ const PrintableTicket = ({ ticket }) => {
           <p className="text-[8px] font-bold mb-2 leading-snug text-black border-b border-gray-400 pb-1.5">
             {t.termsIntro}
           </p>
-          <div className="text-[7.5px] leading-[11px] text-gray-800 text-justify columns-2 gap-5 font-medium flex-1">
-            {t.terms.map((term, i) => (
-              <p
-                key={i}
-                className={`mb-1 break-inside-avoid ${t.boldTerms.includes(i) ? 'font-extrabold text-black uppercase' : ''}`}
-              >
-                {term}
-              </p>
-            ))}
+          <div className="text-[7.5px] leading-[11px] text-gray-800 font-medium flex-1">
+            <TermsTwoColumns terms={t.terms} boldIndices={t.boldTerms} />
           </div>
         </div>
       </div>

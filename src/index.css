@@ -118,3 +118,9 @@
   .print-bg-white { background-color: #ffffff !important; }
   .print-bg-gray { background-color: #f9fafb !important; }
 }
+
+@layer components {
+  .app-container {
+    @apply w-full max-w-[1800px] mx-auto px-1 md:px-2;
+  }
+}

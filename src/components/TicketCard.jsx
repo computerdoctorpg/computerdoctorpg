@@ -12,6 +12,8 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { canDeleteTickets, canEditDocuments } from '@/lib/permissions';
 import { updateTicket } from '@/lib/db';
 import { buildCompletionViberMessage, openViberChat } from '@/lib/viberUtils';
+import { BrandLogo } from '@/components/DeviceBrandFields';
+import { parseDeviceBrandModel } from '@/lib/ticketUtils';
 
 const STATUS_CONFIG = {
   pending: { color: 'bg-amber-500/20 text-amber-300 border-amber-500/40', dot: 'bg-amber-400', label: 'NA ČEKANJU' },
@@ -63,6 +65,8 @@ const TicketCard = ({
 
   const status = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.pending;
   const totalCost = (parseFloat(ticket.partsCost) || 0) + (parseFloat(ticket.serviceCost) || 0);
+  const { brand, model } = parseDeviceBrandModel(ticket.deviceName);
+  const displayModel = model || ticket.deviceName;
 
   const handleViberClick = async (e) => {
     e.stopPropagation();
@@ -224,11 +228,22 @@ const TicketCard = ({
             </>
           ) : (
             <>
-              <div className="flex items-center gap-2">
-                <Laptop className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="font-semibold text-white text-xs truncate">{ticket.deviceName}</span>
+              <div className="flex items-start gap-2.5">
+                <div className={`shrink-0 rounded-lg bg-slate-950 border border-slate-600 flex items-center justify-center ${compact ? 'w-9 h-9 p-1' : 'w-11 h-11 p-1.5'}`}>
+                  <BrandLogo brand={brand} className={compact ? 'w-6 h-6' : 'w-7 h-7'} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  {brand && (
+                    <p className="text-[10px] uppercase tracking-wide font-bold text-cyan-400/90 truncate">
+                      {brand}
+                    </p>
+                  )}
+                  <p className={`font-semibold text-white truncate ${compact ? 'text-xs' : 'text-sm'}`}>
+                    {displayModel}
+                  </p>
+                </div>
               </div>
-              <div className={`${compact ? 'space-y-1 pl-5' : 'grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6'}`}>
+              <div className={`${compact ? 'space-y-1 pl-0' : 'grid grid-cols-1 sm:grid-cols-2 gap-2 pl-0'}`}>
                 <DetailRow icon={Hash} label="S/N" value={ticket.deviceSerial} mono highlight="text-cyan-400/70" />
                 {!compact && <DetailRow icon={Battery} label="Baterija" value={ticket.batterySerial} mono />}
                 {!compact && <DetailRow icon={Zap} label="Punjač" value={ticket.chargerSerial} mono />}

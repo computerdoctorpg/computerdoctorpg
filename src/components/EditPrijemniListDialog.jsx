@@ -7,14 +7,23 @@ import {
   Database, ShoppingBag, Printer, Save, Loader2, FileText, Shield, Calendar, Languages, Mail
 } from 'lucide-react';
 import PrintableTicket from '@/components/PrintableTicket';
+import { DeviceBrandFields } from '@/components/DeviceBrandFields';
 import { prepareServiceTicketForEnglishPrint } from '@/lib/translateForPrint';
+import {
+  DEVICE_BRANDS,
+  OTHER_BRAND_LABEL,
+  splitDeviceFields,
+  combineDeviceName,
+} from '@/lib/deviceBrands';
 
 const emptyForm = {
   customerName: '',
   customerSurname: '',
   customerPhone: '',
   customerEmail: '',
-  deviceName: '',
+  deviceBrand: '',
+  deviceModel: '',
+  customBrand: '',
   deviceSerial: '',
   chargerSerial: '',
   batterySerial: '',
@@ -46,19 +55,31 @@ const EditPrijemniListDialog = ({
   const [isTranslating, setIsTranslating] = useState(false);
   const [sendEmailToCustomer, setSendEmailToCustomer] = useState(true);
 
-  const buildTicket = () => ({
-    ...ticket,
-    ...formData,
-  });
+  const buildTicket = () => {
+    const resolvedBrand = formData.deviceBrand === OTHER_BRAND_LABEL
+      ? formData.customBrand.trim()
+      : formData.deviceBrand.trim();
+
+    return {
+      ...ticket,
+      ...formData,
+      deviceName: combineDeviceName(resolvedBrand, formData.deviceModel),
+    };
+  };
 
   useEffect(() => {
     if (!ticket || !isOpen) return;
+    const split = splitDeviceFields(ticket.deviceName || '');
+    const isKnownBrand = DEVICE_BRANDS.some((b) => b.label === split.deviceBrand);
+
     setFormData({
       customerName: ticket.customerName || '',
       customerSurname: ticket.customerSurname || '',
       customerPhone: ticket.customerPhone || '',
       customerEmail: ticket.customerEmail || '',
-      deviceName: ticket.deviceName || '',
+      deviceBrand: isKnownBrand ? split.deviceBrand : (split.deviceBrand ? OTHER_BRAND_LABEL : ''),
+      deviceModel: split.deviceModel,
+      customBrand: isKnownBrand ? '' : split.deviceBrand,
       deviceSerial: ticket.deviceSerial || '',
       chargerSerial: ticket.chargerSerial || '',
       batterySerial: ticket.batterySerial || '',
@@ -226,10 +247,15 @@ const EditPrijemniListDialog = ({
                 <h3 className="text-sm font-semibold text-blue-400 flex items-center gap-2">
                   <Laptop className="w-4 h-4" /> Uređaj
                 </h3>
-                <div>
-                  <Label className="text-slate-300 text-xs">Model / naziv</Label>
-                  <input name="deviceName" value={formData.deviceName} onChange={handleChange} className={inputClass} />
-                </div>
+                <DeviceBrandFields
+                  brand={formData.deviceBrand}
+                  model={formData.deviceModel}
+                  customBrand={formData.customBrand}
+                  onBrandChange={(value) => setFormData((prev) => ({ ...prev, deviceBrand: value }))}
+                  onModelChange={(value) => setFormData((prev) => ({ ...prev, deviceModel: value }))}
+                  onCustomBrandChange={(value) => setFormData((prev) => ({ ...prev, customBrand: value }))}
+                  inputClass={inputClass}
+                />
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-slate-300 text-xs flex items-center gap-1"><Hash className="w-3 h-3" /> S/N laptopa</Label>

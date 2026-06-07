@@ -80,7 +80,7 @@ const PartsPage = () => {
   if (isAdmin) {
     return (
       <div className="min-h-screen p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="app-container">
           <PartsManagement />
         </div>
       </div>
@@ -90,7 +90,7 @@ const PartsPage = () => {
   // Read-only Operater View
   return (
     <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="app-container space-y-6">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">

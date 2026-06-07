@@ -25,6 +25,7 @@ const PrintableVhsTicket = ({ ticket }) => {
 
   return (
     <div
+      data-pdf-page
       className="flex flex-col w-[210mm] min-h-[297mm] bg-white text-black p-[10mm] font-sans box-border"
       style={{ color: 'black', backgroundColor: 'white', colorScheme: 'light', ...printExact }}
     >
@@ -167,10 +168,28 @@ const PrintableVhsTicket = ({ ticket }) => {
       </div>
 
       {/* Uslovi */}
-      <div className="mb-3 text-[7px] leading-[10px] text-gray-800 columns-2 gap-4 font-medium">
-        {t.vhsTerms.map((term, i) => (
-          <p key={i} className={t.vhsBoldTerms.includes(i) ? 'font-bold text-black' : ''}>{term}</p>
-        ))}
+      <div className="mb-3 text-[7px] leading-[10px] text-gray-800 font-medium">
+        <div className="grid grid-cols-2 gap-x-4">
+          {[0, 1].map((col) => {
+            const mid = Math.ceil(t.vhsTerms.length / 2);
+            const colTerms = col === 0 ? t.vhsTerms.slice(0, mid) : t.vhsTerms.slice(mid);
+            return (
+              <div key={col}>
+                {colTerms.map((term, rowIndex) => {
+                  const termIndex = col === 0 ? rowIndex : rowIndex + mid;
+                  return (
+                    <p
+                      key={termIndex}
+                      className={`mb-1 ${t.vhsBoldTerms.includes(termIndex) ? 'font-bold text-black' : ''}`}
+                    >
+                      {term}
+                    </p>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mt-auto pt-2 border-t-2 border-black grid grid-cols-2 gap-12">

@@ -3,6 +3,11 @@ import { Laptop, User, Phone, Hash, Lock, Database, ShoppingBag, AlertCircle, Ba
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { DeviceBrandFields } from '@/components/DeviceBrandFields';
+import {
+  OTHER_BRAND_LABEL,
+  combineDeviceName,
+} from '@/lib/deviceBrands';
 
 const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
   const [formData, setFormData] = useState({
@@ -10,7 +15,9 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
     customerSurname: '',
     customerPhone: '',
     customerEmail: '',
-    deviceName: '',
+    deviceBrand: '',
+    deviceModel: '',
+    customBrand: '',
     deviceSerial: '',
     chargerSerial: '',
     batterySerial: '',
@@ -53,8 +60,14 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
     if (!formData.customerPhone.trim()) {
       newErrors.customerPhone = 'Broj telefona je obavezan za kontakt';
     }
-    if (!formData.deviceName.trim()) {
-      newErrors.deviceName = 'Naziv uređaja je obavezan';
+    if (!formData.deviceBrand.trim()) {
+      newErrors.deviceBrand = 'Brend je obavezan';
+    }
+    if (formData.deviceBrand === OTHER_BRAND_LABEL && !formData.customBrand.trim()) {
+      newErrors.deviceBrand = 'Unesite naziv brenda';
+    }
+    if (!formData.deviceModel.trim()) {
+      newErrors.deviceModel = 'Model je obavezan';
     }
     if (!formData.deviceSerial.trim()) {
       newErrors.deviceSerial = 'Serijski broj je obavezan';
@@ -75,7 +88,14 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
       setIsSubmitting(true);
       try {
         console.log("Validation passed, calling onSubmit...");
-        await onSubmit(formData);
+        const resolvedBrand = formData.deviceBrand === OTHER_BRAND_LABEL
+          ? formData.customBrand.trim()
+          : formData.deviceBrand.trim();
+
+        await onSubmit({
+          ...formData,
+          deviceName: combineDeviceName(resolvedBrand, formData.deviceModel),
+        });
         
         // Reset form on success
         setFormData({
@@ -83,7 +103,9 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
           customerSurname: '',
           customerPhone: '',
           customerEmail: '',
-          deviceName: '',
+          deviceBrand: '',
+          deviceModel: '',
+          customBrand: '',
           deviceSerial: '',
           chargerSerial: '',
           batterySerial: '',
@@ -254,22 +276,26 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
               Informacije o Uređaju
             </h3>
 
-            <div>
-              <Label htmlFor='deviceName' className='text-slate-300'>Naziv/Model Uređaja *</Label>
-              <input
-                id='deviceName'
-                name='deviceName'
-                type='text'
-                value={formData.deviceName}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className={`w-full mt-1 px-4 py-2 bg-slate-900/50 border ${errors.deviceName ? 'border-red-500' : 'border-slate-600'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
-                placeholder='Dell XPS 15, MacBook Pro, itd.'
-              />
-              {errors.deviceName && (
-                <p className='text-red-400 text-sm mt-1'>{errors.deviceName}</p>
-              )}
-            </div>
+            <DeviceBrandFields
+              brand={formData.deviceBrand}
+              model={formData.deviceModel}
+              customBrand={formData.customBrand}
+              onBrandChange={(value) => {
+                setFormData((prev) => ({ ...prev, deviceBrand: value }));
+                if (errors.deviceBrand) setErrors((prev) => ({ ...prev, deviceBrand: '' }));
+              }}
+              onModelChange={(value) => {
+                setFormData((prev) => ({ ...prev, deviceModel: value }));
+                if (errors.deviceModel) setErrors((prev) => ({ ...prev, deviceModel: '' }));
+              }}
+              onCustomBrandChange={(value) => {
+                setFormData((prev) => ({ ...prev, customBrand: value }));
+                if (errors.deviceBrand) setErrors((prev) => ({ ...prev, deviceBrand: '' }));
+              }}
+              brandError={errors.deviceBrand}
+              modelError={errors.deviceModel}
+              inputClass={`w-full mt-1 px-4 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+            />
 
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div>

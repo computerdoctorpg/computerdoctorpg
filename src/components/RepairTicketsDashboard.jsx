@@ -1049,37 +1049,37 @@ const RepairTicketsDashboard = () => {
         </div>
       )}
 
-      <div className='min-h-screen p-3 sm:p-4 md:p-8 pb-[max(1rem,env(safe-area-inset-bottom))] dashboard-container overflow-x-hidden'>
-        <div className='max-w-7xl mx-auto'>
+      <div className='min-h-screen p-3 md:p-6 lg:p-8 pb-[max(1rem,env(safe-area-inset-bottom))] dashboard-container overflow-x-hidden md:overflow-x-visible'>
+        <div className='app-container'>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-              <div className="overflow-x-auto max-w-full -mx-1 px-1 pb-1">
-                <TabsList className="bg-slate-800/80 border border-slate-700 p-1 h-auto w-max min-w-full flex-nowrap inline-flex">
-                <TabsTrigger value="tickets" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
+              <div className="overflow-x-auto max-w-full md:overflow-x-visible -mx-1 px-1 pb-1 md:mx-0 md:px-0 md:pb-0">
+                <TabsList className="bg-slate-800/80 border border-slate-700 p-1 h-auto w-max min-w-full md:min-w-0 flex-nowrap inline-flex">
+                <TabsTrigger value="tickets" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                   <LayoutGrid className="w-4 h-4 shrink-0" />
                   Nalozi
                 </TabsTrigger>
-                <TabsTrigger value="clients" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
+                <TabsTrigger value="clients" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
                   <Users className="w-4 h-4 shrink-0" />
                   Klijenti
                 </TabsTrigger>
-                <TabsTrigger value="warranty" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                <TabsTrigger value="warranty" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
                   <Shield className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">Garantni </span>Rok
+                  <span className="hidden md:inline">Garantni </span>Rok
                 </TabsTrigger>
-                <TabsTrigger value="vhs" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                <TabsTrigger value="vhs" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <Film className="w-4 h-4 shrink-0" />
                   VHS
                 </TabsTrigger>
                 {isAdmin && (
-                  <TabsTrigger value="finances" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                  <TabsTrigger value="finances" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                     <BarChart3 className="w-4 h-4 shrink-0" />
                     Finansije
                   </TabsTrigger>
                 )}
                 {isAdmin && (
-                  <TabsTrigger value="recycle" className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap data-[state=active]:bg-red-600 data-[state=active]:text-white">
+                  <TabsTrigger value="recycle" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-red-600 data-[state=active]:text-white">
                     <Trash2 className="w-4 h-4 shrink-0" />
                     Korpa
                     {deletedTickets.length > 0 && (
@@ -1125,9 +1125,9 @@ const RepairTicketsDashboard = () => {
                 ))}
               </motion.div>
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className='bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700'>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className='bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 md:p-6 border border-slate-700'>
                 <div className='flex flex-col gap-4'>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex flex-col md:flex-row md:items-center gap-3">
                     <div className='flex-1 relative min-w-0'>
                       <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5' />
                       <input type='text' placeholder='Pretraga: ime, telefon, brend, model, serijski broj...' value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className='w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all' />
@@ -1136,7 +1136,7 @@ const RepairTicketsDashboard = () => {
                       onServisniPrijem={handleNewServisniPrijem}
                       onGarantniRok={handleNewGarantniRok}
                       onVhs={handleNewVhs}
-                      className="w-full sm:w-auto px-5 py-3"
+                      className="w-full md:w-auto px-5 py-3 md:hidden"
                     />
                   </div>
 
@@ -1212,9 +1212,6 @@ const RepairTicketsDashboard = () => {
 
                   <p className="text-sm text-slate-400">
                     Prikazano <span className="text-white font-semibold">{filteredTickets.length}</span> od {regularTickets.length} naloga
-                    {filteredTickets.length > 0 && (
-                      <span className="hidden sm:inline text-slate-500 ml-2">· prevucite kartice udesno za više naloga istog dana</span>
-                    )}
                   </p>
 
                   {(searchTerm || filterBrand || filterModel || filterStatus !== 'all' || filterMonth !== 'all' || filterDay !== 'all') && (

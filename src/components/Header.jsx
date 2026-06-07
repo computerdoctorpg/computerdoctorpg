@@ -75,15 +75,16 @@ const Header = () => {
 
   return (
     <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700 p-3 sm:p-4 sticky top-0 z-40 pt-[max(0.75rem,env(safe-area-inset-top))]">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <img className="h-10 sm:h-12 w-auto object-contain shrink-0" alt="Computer Doctor logo" src="/images/logo.png" />
-          <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-bold text-white leading-tight truncate">COMPUTER DOCTOR</h1>
-            <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full border border-green-500/30 inline-flex items-center gap-1">
-              <Cloud className="w-3 h-3" /> CLOUD
-            </span>
-          </div>
+      <div className="app-container flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <img
+            className="h-14 sm:h-16 md:h-[4.75rem] w-auto object-contain shrink-0"
+            alt="Computer Doctor"
+            src="/images/logo.png"
+          />
+          <span className="bg-green-500/20 text-green-400 text-[10px] px-2 py-0.5 rounded-full border border-green-500/30 inline-flex items-center gap-1 shrink-0">
+            <Cloud className="w-3 h-3" /> CLOUD
+          </span>
         </div>
 
         {/* Desktop nav */}

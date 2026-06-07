@@ -1,48 +1,18 @@
+import {
+  splitDeviceFields,
+  getAllBrandFilterOptions,
+} from '@/lib/deviceBrands';
+
 const normalizePhone = (phone) => (phone || '').replace(/\D/g, '');
 
 const normalizeText = (value) => (value || '').toLowerCase().trim();
 
-const KNOWN_BRANDS = [
-  'macbook', 'surface', 'thinkpad', 'ideapad', 'legion', 'vivobook', 'zenbook',
-  'predator', 'aspire', 'travelmate', 'satellite', 'portege', 'elitebook', 'probook',
-  'pavilion', 'omen', 'inspiron', 'latitude', 'vostro', 'xps', 'alienware',
-  'dell', 'hp', 'hewlett-packard', 'lenovo', 'asus', 'acer', 'apple', 'msi',
-  'toshiba', 'samsung', 'microsoft', 'huawei', 'honor', 'lg', 'gigabyte', 'razer',
-  'sony', 'vaio', 'fujitsu', 'compaq', 'packard bell',
-];
-
 export const parseDeviceBrandModel = (deviceName) => {
-  if (!deviceName?.trim()) return { brand: '', model: '' };
-
-  const normalized = deviceName.trim();
-  const lower = normalized.toLowerCase();
-
-  const sortedBrands = [...KNOWN_BRANDS].sort((a, b) => b.length - a.length);
-  for (const brandKey of sortedBrands) {
-    if (lower === brandKey || lower.startsWith(`${brandKey} `)) {
-      const brand = normalized.slice(0, brandKey.length);
-      const model = normalized.slice(brandKey.length).trim();
-      return { brand, model };
-    }
-  }
-
-  const parts = normalized.split(/\s+/);
-  return {
-    brand: parts[0] || '',
-    model: parts.slice(1).join(' '),
-  };
+  const { deviceBrand, deviceModel } = splitDeviceFields(deviceName);
+  return { brand: deviceBrand, model: deviceModel };
 };
 
-export const getUniqueBrands = (tickets) => {
-  const brands = new Map();
-  tickets.forEach((ticket) => {
-    const { brand } = parseDeviceBrandModel(ticket.deviceName);
-    if (!brand) return;
-    const key = brand.toLowerCase();
-    if (!brands.has(key)) brands.set(key, brand);
-  });
-  return Array.from(brands.values()).sort((a, b) => a.localeCompare(b, 'sr'));
-};
+export const getUniqueBrands = (tickets) => getAllBrandFilterOptions(tickets);
 
 export const ticketMatchesBrandModel = (ticket, brandFilter, modelFilter) => {
   if (!brandFilter?.trim() && !modelFilter?.trim()) return true;
@@ -56,9 +26,9 @@ export const ticketMatchesBrandModel = (ticket, brandFilter, modelFilter) => {
   if (brandFilter?.trim()) {
     const term = normalizeText(brandFilter);
     const match =
+      brandNorm === term ||
       brandNorm.includes(term) ||
-      fullName.includes(term) ||
-      normalizeText(ticket.deviceName).split(/\s+/)[0]?.includes(term);
+      fullName.includes(term);
     if (!match) return false;
   }
 
