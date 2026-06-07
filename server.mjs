@@ -57,7 +57,7 @@ createServer(async (req, res) => {
     return;
   }
 
-  if (urlPath === '/env.js') {
+  if (urlPath === '/env.js' || urlPath === '/api/runtime-env') {
     res.writeHead(200, {
       'Content-Type': 'application/javascript; charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate',

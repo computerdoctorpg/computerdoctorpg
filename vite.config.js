@@ -18,6 +18,16 @@ const emailApiPlugin = (env) => ({
       res.end(`window.__ENV__=${JSON.stringify(runtimeEnv)};`);
     });
 
+    server.middlewares.use('/api/runtime-env', (_req, res) => {
+      const runtimeEnv = {
+        VITE_SUPABASE_URL: env.VITE_SUPABASE_URL || env.SUPABASE_URL || '',
+        VITE_SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || '',
+      };
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.end(`window.__ENV__=${JSON.stringify(runtimeEnv)};`);
+    });
+
     server.middlewares.use('/api/send-ticket-email', async (req, res, next) => {
       if (req.method !== 'POST') {
         next();
