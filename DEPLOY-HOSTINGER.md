@@ -6,6 +6,9 @@ Repo: **https://github.com/computerdoctorpg/computerdoctorpg**
 > **Važno:** Ovo **nije** običan statički sajt (`dist` samo).  
 > Potreban je **Node.js Web App** jer server radi email, korpu, operatere i backup (`server.mjs`).
 
+> **Trenutno stanje (provjereno):** `www.computerdoctor.in` je na **Hostinger Horizons** (`X-Powered-By: Hostinger Horizons`).  
+> Horizons servira samo statički HTML — `/api/*` rute **ne rade**. Mora se ukloniti i zamijeniti Node.js Web App-om.
+
 ---
 
 ## Pregled — šta ide gdje

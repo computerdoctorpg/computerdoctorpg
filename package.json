@@ -1,6 +1,7 @@
 {
   "name": "pc-servis-admin",
   "type": "module",
+  "main": "server.mjs",
   "version": "0.0.0",
   "private": true,
   "engines": {
@@ -23,7 +24,9 @@
     "apply-schema": "node scripts/apply-schema.mjs",
     "apply-schema-api": "node scripts/apply-schema-api.mjs",
     "schema-editor": "powershell -ExecutionPolicy Bypass -File scripts/open-schema-editor.ps1",
-    "hostinger-env": "node scripts/print-hostinger-env.mjs"
+    "hostinger-env": "node scripts/print-hostinger-env.mjs",
+    "hostinger:zip": "node scripts/package-hostinger-zip.mjs",
+    "hostinger:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup-hostinger-production.ps1"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "^1.3.1",

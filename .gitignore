@@ -4,5 +4,6 @@ dist
 .env.local
 *.log
 .DS_Store
+hostinger-deploy.zip
 data/export-backup.json
 data/recycle-bin.json
