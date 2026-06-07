@@ -5,12 +5,13 @@
   "version": "0.0.0",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "vite --host :: --port 3000",
     "build": "vite build && node scripts/generate-runtime-env.mjs",
     "start": "node server.mjs",
+    "hostinger:build": "npm ci && npm run build",
     "preview": "vite preview --host :: --port 3000",
     "lint": "eslint . --quiet",
     "reset-password": "node scripts/reset-admin-password.mjs",

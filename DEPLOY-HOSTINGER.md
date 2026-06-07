@@ -51,14 +51,18 @@ Ako `git push` traži lozinku → koristi **GitHub Personal Access Token** (Sett
 
 | Polje | Vrijednost |
 |-------|------------|
-| Node.js verzija | **20** ili **22** |
+| Framework | **Other** (NE samo Vite — treba Node server) |
+| Node.js verzija | **20** (ne 22) |
 | Root directory | `/` (root repoa) |
 | Install command | `npm ci` |
 | Build command | `npm run build` |
 | **Start command** | **`npm start`** |
-| Entry file | `server.mjs` (ako pita) |
+| Entry file | **`server.mjs`** |
+| Output directory | **`dist`** |
 
 **NE** koristi samo „Static site“ / „Output: dist“ bez Node servera — email i korpa neće raditi.
+
+> Ako build padne za 3 sekunde bez logova: provjeri Framework = **Other**, Node = **20**, Start = **npm start**, Entry = **server.mjs**.
 
 ---
 
