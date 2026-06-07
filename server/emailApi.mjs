@@ -25,6 +25,19 @@ const stripEnv = (value) => {
   return v.trim();
 };
 
+const decodeSmtpPass = (value) => {
+  const pass = stripEnv(value);
+  if (!pass) return '';
+  if (pass.includes('%')) {
+    try {
+      return decodeURIComponent(pass);
+    } catch {
+      return pass;
+    }
+  }
+  return pass;
+};
+
 const getSmtpConfig = () => ({
   host: stripEnv(process.env.SMTP_HOST),
   port: Number(process.env.SMTP_PORT || 465),
