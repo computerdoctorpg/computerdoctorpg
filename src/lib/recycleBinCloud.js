@@ -3,6 +3,14 @@ import { supabase } from '@/lib/customSupabaseClient';
 async function getAccessToken() {
   const { data, error } = await supabase.auth.getSession();
   if (error || !data?.session?.access_token) return null;
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user) {
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData?.session?.access_token) return null;
+    return refreshData.session.access_token;
+  }
+
   return data.session.access_token;
 }
 

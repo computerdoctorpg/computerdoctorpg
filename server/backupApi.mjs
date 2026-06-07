@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { readJsonBody } from './emailApi.mjs';
+import { readJsonBody, verifyAuthToken } from './emailApi.mjs';
 
 const BACKUP_TABLES = [
   'parts_categories',
@@ -19,18 +19,11 @@ function getSupabaseConfig() {
 }
 
 async function verifyAdmin(authHeader) {
-  const token = authHeader?.replace(/^Bearer\s+/i, '');
-  if (!token) return null;
+  const user = await verifyAuthToken(authHeader);
+  if (!user) return null;
 
-  const { url, anonKey, serviceKey } = getSupabaseConfig();
-  if (!url || !anonKey) return null;
-
-  const authClient = createClient(url, anonKey);
-  const { data, error } = await authClient.auth.getUser(token);
-  if (error || !data?.user) return null;
-
-  const user = data.user;
   const isAdminEmail = user.email?.toLowerCase() === 'prodaja@computer-doctor.me';
+  const { url, serviceKey } = getSupabaseConfig();
 
   if (!serviceKey) {
     if (isAdminEmail) return user;

@@ -107,12 +107,11 @@ Email: prodaja@computer-doctor.me`;
   });
 }
 
-async function verifyAuthToken(authHeader) {
+export async function verifyAuthToken(authHeader) {
   const token = authHeader?.replace(/^Bearer\s+/i, '');
   if (!token) return null;
 
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  // Use service role key so session existence in DB is not required
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
   const key = serviceKey || anonKey;

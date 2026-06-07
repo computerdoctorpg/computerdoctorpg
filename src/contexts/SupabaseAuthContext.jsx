@@ -26,11 +26,30 @@ export const AuthProvider = ({ children }) => {
   const handleSession = useCallback(async (currentSession) => {
     if (currentSession?.user) {
       try {
-        const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
-        const activeUser = validatedUser || currentSession.user;
+        let activeSession = currentSession;
+        let activeUser = currentSession.user;
 
-        if (userError && !validatedUser) {
-          console.warn("Session validation warning:", userError.message);
+        const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+        if (validatedUser) {
+          activeUser = validatedUser;
+        } else if (userError) {
+          const staleSession =
+            /session/i.test(userError.message || '') ||
+            userError.status === 401 ||
+            userError.status === 403;
+
+          if (staleSession) {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError || !refreshData?.session?.user) {
+              setUser(null);
+              setSession(null);
+              clearLocalAuthData();
+              setLoading(false);
+              return;
+            }
+            activeSession = refreshData.session;
+            activeUser = refreshData.session.user;
+          }
         }
 
         let role = 'operater';
@@ -52,7 +71,7 @@ export const AuthProvider = ({ children }) => {
         };
 
         setUser(enrichedUser);
-        setSession(currentSession);
+        setSession(activeSession);
       } catch (err) {
         console.error('Unexpected error during session handling:', err);
         setUser(null);

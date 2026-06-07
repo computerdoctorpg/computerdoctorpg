@@ -1,5 +1,23 @@
 import { supabase } from '@/lib/customSupabaseClient';
 
+async function getValidAccessToken() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session?.access_token) {
+    throw new Error('Morate biti ulogovani da biste poslali email.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user) {
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData?.session?.access_token) {
+      throw new Error('Sesija je istekla. Odjavite se i ponovo se prijavite.');
+    }
+    return refreshData.session.access_token;
+  }
+
+  return session.access_token;
+}
+
 export async function sendTicketEmail({
   to,
   type = 'intake',
@@ -8,10 +26,7 @@ export async function sendTicketEmail({
   ticket,
   filename,
 }) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error('Morate biti ulogovani da biste poslali email.');
-  }
+  const accessToken = await getValidAccessToken();
 
   if (!ticket) {
     throw new Error('Podaci dokumenta nisu proslijeđeni za email.');
@@ -21,7 +36,7 @@ export async function sendTicketEmail({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
       to: to.trim(),

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { readJsonBody } from './emailApi.mjs';
+import { readJsonBody, verifyAuthToken } from './emailApi.mjs';
 import {
   addCloudDeletedTicket,
   getCloudDeletedIds,
@@ -7,20 +7,6 @@ import {
   removeCloudDeletedTicket,
   syncCloudRecycleBinTickets,
 } from './recycleBinStore.mjs';
-
-async function verifyAuthToken(authHeader) {
-  const token = authHeader?.replace(/^Bearer\s+/i, '');
-  if (!token) return null;
-
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-
-  const supabase = createClient(url, key);
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data?.user) return null;
-  return data.user;
-}
 
 async function verifyAdmin(authHeader) {
   const user = await verifyAuthToken(authHeader);
