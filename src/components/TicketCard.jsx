@@ -117,16 +117,16 @@ const TicketCard = ({
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.25, delay: index * 0.03 }}
       onClick={() => onClick(ticket)}
-      className={`group bg-slate-800/70 backdrop-blur-sm rounded-xl border border-slate-700/80 overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-900/10 transition-all cursor-pointer flex flex-col ${
-        compact ? 'w-[min(calc(100vw-2rem),320px)] sm:w-[320px] shrink-0' : ''
+      className={`group bg-slate-800/70 backdrop-blur-sm rounded-xl border border-slate-700/80 overflow-hidden hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-900/10 transition-all cursor-pointer flex flex-col min-w-0 ${
+        compact ? 'w-full sm:w-[300px] md:w-[320px] sm:shrink-0' : ''
       }`}
     >
       {/* Header */}
-      <div className={`${compact ? 'px-3 py-2' : 'px-4 py-3'} bg-slate-900/60 border-b border-slate-700/60 flex items-center justify-between gap-2`}>
-        <div className="flex items-center gap-2 min-w-0">
+      <div className={`${compact ? 'px-3 py-2' : 'px-4 py-3'} bg-slate-900/60 border-b border-slate-700/60 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5`}>
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap flex-1">
           <span className="font-mono text-sm font-bold text-blue-400 shrink-0">#{ticket.id}</span>
-          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${status.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border whitespace-nowrap ${status.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`} />
             {status.label}
           </span>
           {ticket.isWarranty && (
@@ -142,7 +142,7 @@ const TicketCard = ({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-0.5 shrink-0 opacity-80 group-hover:opacity-100">
+        <div className="flex items-center gap-0.5 shrink-0 flex-wrap justify-end opacity-80 group-hover:opacity-100">
           {isAdmin && ticket.status === 'completed' && (
             <Button onClick={handleReopen} size="icon" variant="ghost" disabled={isReopening}
               className="h-7 w-7 text-amber-400 hover:bg-amber-900/30" title="Ponovo otvori">
@@ -184,7 +184,7 @@ const TicketCard = ({
         <div>
           <div className="flex items-center gap-2 mb-0.5">
             <User className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-            <h3 className={`font-bold text-white truncate ${compact ? 'text-sm' : 'text-base'}`}>
+            <h3 className={`font-bold text-white break-words ${compact ? 'text-sm' : 'text-base truncate'}`}>
               {ticket.customerName} {ticket.customerSurname}
             </h3>
           </div>

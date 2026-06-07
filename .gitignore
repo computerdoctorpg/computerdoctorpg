@@ -2,6 +2,7 @@ node_modules
 dist
 .env
 .env.local
+hostinger.env
 *.log
 .DS_Store
 hostinger-deploy.zip

@@ -56,11 +56,15 @@ const Header = () => {
   const NavButtons = ({ onNavigate, vertical = false }) => (
     <div className={vertical ? 'flex flex-col gap-2' : 'flex items-center gap-2 flex-wrap justify-center'}>
       {navLinks.map(({ to, label, icon: Icon, active, className }) => (
-        <Link key={to} to={to} onClick={onNavigate}>
+        <Link key={to} to={to} onClick={onNavigate} className={vertical ? 'block' : undefined}>
           <Button
             variant={active ? 'default' : 'ghost'}
             size={vertical ? 'default' : 'sm'}
-            className={`w-full justify-start ${active ? className : 'text-slate-300 hover:text-white'}`}
+            className={
+              vertical
+                ? `w-full justify-start ${active ? className : 'text-slate-300 hover:text-white'}`
+                : active ? className : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+            }
           >
             <Icon className="w-4 h-4 mr-2" /> {label}
           </Button>
@@ -83,12 +87,12 @@ const Header = () => {
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-2">
+        <nav className="hidden md:flex items-center gap-2 flex-1 justify-center px-4">
           <NavButtons />
         </nav>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden lg:flex flex-col items-end">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="hidden md:flex flex-col items-end">
             <div className="flex items-center gap-2 text-slate-300 text-sm font-medium">
               <span className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-purple-500' : 'bg-blue-500'}`} />
               <span className="max-w-[140px] truncate">{displayLabel}</span>
@@ -103,7 +107,7 @@ const Header = () => {
             size="sm"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="hidden sm:flex items-center gap-2"
+            className="hidden md:flex items-center gap-2"
           >
             {isLoggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
             {isLoggingOut ? 'Odjava...' : 'Odjavi se'}
