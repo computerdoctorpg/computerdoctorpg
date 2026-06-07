@@ -112,10 +112,13 @@ async function verifyAuthToken(authHeader) {
   if (!token) return null;
 
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  // Use service role key so session existence in DB is not required
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const key = serviceKey || anonKey;
   if (!url || !key) return null;
 
-  const supabase = createClient(url, key);
+  const supabase = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data?.user) return null;
   return data.user;
