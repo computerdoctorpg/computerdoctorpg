@@ -124,7 +124,7 @@ const PrintableTicket = ({ ticket }) => {
       {/* Header */}
       <div className="flex justify-between items-center border-b-[2.5px] border-black pb-3 mb-3 shrink-0">
         <div className="flex items-center gap-3">
-          <img className="h-[18mm] w-auto object-contain" alt="Computer Doctor logo" src="/images/logo.png" />
+          <img className="h-[18mm] w-auto object-contain" alt="Computer Doctor logo" src="/images/logo.png" crossOrigin="anonymous" />
           <div>
             <h1 className="text-[22px] font-extrabold tracking-tight leading-none" style={{ color: BRAND.green, ...printExact }}>
               COMPUTER DOCTOR

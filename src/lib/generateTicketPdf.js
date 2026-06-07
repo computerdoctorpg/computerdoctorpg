@@ -1,9 +1,45 @@
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-/** A4 at 96dpi — html2canvas radi pouzdanije sa px nego sa mm */
+/** A4 at 96dpi */
 const A4_WIDTH_PX = 794;
 const A4_HEIGHT_PX = 1123;
+
+const PDF_CAPTURE_CSS = `
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+  }
+  [data-pdf-page] {
+    width: ${A4_WIDTH_PX}px !important;
+    height: ${A4_HEIGHT_PX}px !important;
+    max-height: ${A4_HEIGHT_PX}px !important;
+    min-height: ${A4_HEIGHT_PX}px !important;
+    overflow: hidden !important;
+    display: block !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-sizing: border-box !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  [data-pdf-page] * {
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  [data-pdf-page] svg {
+    display: none !important;
+  }
+  [data-pdf-page] img {
+    display: inline-block !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+  }
+`;
 
 function waitForImages(root) {
   const imgs = [...root.querySelectorAll('img')];
@@ -19,7 +55,7 @@ function waitForImages(root) {
           }
           img.onload = () => resolve();
           img.onerror = () => resolve();
-          setTimeout(resolve, 4000);
+          setTimeout(resolve, 5000);
         }),
     ),
   );
@@ -86,21 +122,26 @@ function prepareForCapture(wrapper, page) {
   page.style.overflow = 'hidden';
   page.style.boxSizing = 'border-box';
   page.style.background = '#ffffff';
+  page.style.color = '#000000';
 }
 
-function fixCloneForPdf(clonedPage) {
+function fixCloneForPdf(clonedDoc, clonedPage) {
+  const style = clonedDoc.createElement('style');
+  style.textContent = PDF_CAPTURE_CSS;
+  clonedDoc.head.appendChild(style);
+
   clonedPage.style.width = `${A4_WIDTH_PX}px`;
   clonedPage.style.height = `${A4_HEIGHT_PX}px`;
   clonedPage.style.maxHeight = `${A4_HEIGHT_PX}px`;
   clonedPage.style.overflow = 'hidden';
-  clonedPage.style.boxSizing = 'border-box';
   clonedPage.style.background = '#ffffff';
 
   clonedPage.querySelectorAll('*').forEach((node) => {
-    const style = node.style;
-    if (style.columnCount || style.columns) {
-      style.columnCount = '';
-      style.columns = '';
+    if (node.style) {
+      if (node.style.columnCount || node.style.columns) {
+        node.style.columnCount = '';
+        node.style.columns = '';
+      }
     }
   });
 }
@@ -111,10 +152,11 @@ export async function generatePdfFromElement(element) {
   }
 
   const page = element.querySelector('[data-pdf-page]') || element.firstElementChild || element;
-  const wrapperPrev = captureStyles(element);
-  const pagePrev = page !== element ? captureStyles(page) : null;
+  const wrapper = page.closest('[data-print-type]') || element;
+  const wrapperPrev = captureStyles(wrapper);
+  const pagePrev = page !== wrapper ? captureStyles(page) : null;
 
-  prepareForCapture(element, page);
+  prepareForCapture(wrapper, page);
 
   try {
     if (document.fonts?.ready) {
@@ -138,20 +180,32 @@ export async function generatePdfFromElement(element) {
       scrollX: 0,
       scrollY: 0,
       foreignObjectRendering: false,
-      onclone: (_doc, clonedPage) => {
-        fixCloneForPdf(clonedPage);
+      imageTimeout: 15000,
+      onclone: (clonedDoc, clonedPage) => {
+        fixCloneForPdf(clonedDoc, clonedPage);
       },
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.94);
+    const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+    pdf.addImage(
+      imgData,
+      'PNG',
+      0,
+      0,
+      pageWidth,
+      Math.min(imgHeight, pageHeight),
+      undefined,
+      'FAST',
+    );
 
     return pdf.output('blob');
   } finally {
-    restoreStyles(element, wrapperPrev);
+    restoreStyles(wrapper, wrapperPrev);
     if (pagePrev) restoreStyles(page, pagePrev);
   }
 }

@@ -29,7 +29,8 @@ const PrintableDeliveryNote = ({ ticket }) => {
           <img 
             className="h-20 w-auto object-contain" 
             alt="Computer Doctor logo" 
-            src="/images/logo-delivery.png" 
+            src="/images/logo-delivery.png"
+            crossOrigin="anonymous"
           />
         </div>
         <div className="text-right text-[9px] space-y-1.5 text-gray-700">

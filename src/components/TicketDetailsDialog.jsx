@@ -284,7 +284,15 @@ const TicketDetailsDialog = ({
                     />
                     <Mail className="w-3.5 h-3.5" />
                     Pošalji otpremnicu na email
+                    {ticket.customerEmail?.trim() && (
+                      <span className="text-slate-500">({ticket.customerEmail})</span>
+                    )}
                   </label>
+                  {!ticket.customerEmail?.trim() && (
+                    <p className="text-[11px] text-amber-400 px-1">
+                      Unesite email klijenta u prijemnici da biste mogli slati otpremnicu.
+                    </p>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

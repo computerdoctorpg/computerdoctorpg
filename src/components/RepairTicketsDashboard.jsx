@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { flushSync } from 'react-dom';
 import { motion } from 'framer-motion';
 import { Search, Filter, LayoutGrid, BarChart3, RefreshCw, CalendarDays, Users, Laptop, Cpu, Shield, Film, Trash2 } from 'lucide-react';
 import AddTicketDialog from '@/components/AddTicketDialog';
@@ -25,8 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { canEditDocuments } from '@/lib/permissions';
 import { upsertClient, createTicket, updateTicket, fetchAllTickets, fetchDeletedTickets, deleteTicket, restoreTicket, permanentlyDeleteTicket, getRecycleBinMode, isSoftDeleteDbSupported, probeSoftDeleteSupport } from '@/lib/db';
-import { generatePdfFromElement } from '@/lib/generateTicketPdf';
-import { sendTicketEmail } from '@/lib/sendTicketEmail';
+import { runPrintAndEmailJob } from '@/lib/printAndEmailDocument';
 import { ticketMatchesSearch, ticketMatchesBrandModel, getClientTicketCounts, getMonthKey, getDayKey, formatDayKeyDisplay, getUniqueBrands } from '@/lib/ticketUtils';
 import {
   AlertDialog,
@@ -62,35 +60,8 @@ const RepairTicketsDashboard = () => {
   const [printableTicket, setPrintableTicket] = useState(null);
   const [printableVhsTicket, setPrintableVhsTicket] = useState(null);
   const [printableDeliveryNote, setPrintableDeliveryNote] = useState(null);
-  const [pendingEmail, setPendingEmail] = useState(null);
-  const printEmailRef = useRef(null);
   const skipPrintEffectRef = useRef(false);
   const toastRef = useRef(null);
-
-  const waitForPrintElement = (type, timeoutMs = 6000) => new Promise((resolve, reject) => {
-    const deadline = Date.now() + timeoutMs;
-    const check = () => {
-      const el = document.querySelector(`[data-print-type="${type}"]`);
-      if (el) resolve(el);
-      else if (Date.now() > deadline) reject(new Error('PDF dokument nije spreman za slanje.'));
-      else requestAnimationFrame(check);
-    };
-    check();
-  });
-
-  const sendPrintableDocumentEmail = async (emailJob) => {
-    const el = await waitForPrintElement(emailJob.type);
-    const pdfBlob = await generatePdfFromElement(el);
-    await sendTicketEmail({
-      to: emailJob.to,
-      type: emailJob.type,
-      ticketId: emailJob.ticketId,
-      customerName: emailJob.customerName,
-      pdfBlob,
-      filename: emailJob.filename,
-    });
-    return emailJob.to;
-  };
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
@@ -254,37 +225,14 @@ const RepairTicketsDashboard = () => {
     if (!printableTicket && !printableVhsTicket && !printableDeliveryNote) return;
     if (skipPrintEffectRef.current) return;
 
-    const emailJob = printEmailRef.current;
-    const delay = emailJob ? 2500 : 800;
-
-    const timer = setTimeout(async () => {
-      if (emailJob) {
-        try {
-          const sentTo = await sendPrintableDocumentEmail(emailJob);
-          toastRef.current({
-            title: 'Email poslat',
-            description: `Dokument poslat na ${sentTo}`,
-            className: 'bg-emerald-600 text-white border-none',
-          });
-        } catch (error) {
-          console.error('Email send failed:', error);
-          toastRef.current({
-            variant: 'destructive',
-            title: 'Email nije poslat',
-            description: error.message || 'Provjerite SMTP podešavanja na serveru.',
-          });
-        }
-        printEmailRef.current = null;
-        setPendingEmail(null);
-      }
-
+    const timer = setTimeout(() => {
       window.print();
       setTimeout(() => {
         setPrintableTicket(null);
         setPrintableVhsTicket(null);
         setPrintableDeliveryNote(null);
       }, 500);
-    }, delay);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [printableTicket, printableVhsTicket, printableDeliveryNote]);
@@ -747,44 +695,28 @@ const RepairTicketsDashboard = () => {
       const saved = await savePrijemniListChanges(saveTicket);
       setIsPrijemniEditOpen(false);
       setIsNewPrijemniTicket(false);
-      setPrintableDeliveryNote(null);
 
       if (emailJob) {
         emailJob.ticketId = saved.id;
         emailJob.filename = `Prijemnica_${saved.id}.pdf`;
-        skipPrintEffectRef.current = true;
-      } else {
-        printEmailRef.current = null;
-        setPendingEmail(null);
       }
 
-      flushSync(() => {
-        setPrintableTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
+      await runPrintAndEmailJob({
+        render: () => {
+          setPrintableDeliveryNote(null);
+          setPrintableVhsTicket(null);
+          setPrintableTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
+        },
+        emailJob,
+        toastRef,
+        skipPrintEffectRef,
+        successLabel: 'Prijemnica poslata na',
       });
 
-      if (emailJob) {
-        try {
-          const sentTo = await sendPrintableDocumentEmail(emailJob);
-          toastRef.current({
-            title: 'Email poslat',
-            description: `Prijemnica poslata na ${sentTo}`,
-            className: 'bg-emerald-600 text-white border-none',
-          });
-        } catch (error) {
-          console.error('Email send failed:', error);
-          toastRef.current({
-            variant: 'destructive',
-            title: 'Email nije poslat',
-            description: error.message || 'Provjerite SMTP podešavanja na serveru.',
-          });
-        }
-        await new Promise((r) => setTimeout(r, 400));
-        window.print();
-        setTimeout(() => {
-          setPrintableTicket(null);
-          skipPrintEffectRef.current = false;
-        }, 500);
-      }
+      setTimeout(() => {
+        setPrintableTicket(null);
+        skipPrintEffectRef.current = false;
+      }, 500);
     } catch (error) {
       skipPrintEffectRef.current = false;
       console.error('Error saving before print:', error);
@@ -839,25 +771,33 @@ const RepairTicketsDashboard = () => {
     setIsPrijemniEditOpen(true);
   };
 
-  const handlePrintDeliveryNote = (ticket, options = {}) => {
-    setPrintableTicket(null);
-    setPrintableVhsTicket(null);
-    setPrintableDeliveryNote({ ...ticket });
+  const handlePrintDeliveryNote = async (ticket, options = {}) => {
+    const emailJob = options.sendEmail && ticket.customerEmail?.trim()
+      ? {
+          type: 'delivery',
+          to: ticket.customerEmail.trim(),
+          ticketId: ticket.dispatchNoteNumber || ticket.id,
+          customerName: `${ticket.customerName || ''} ${ticket.customerSurname || ''}`.trim(),
+          filename: `Otpremnica_${ticket.dispatchNoteNumber || ticket.id}.pdf`,
+        }
+      : null;
 
-    if (options.sendEmail && ticket.customerEmail?.trim()) {
-      const emailJob = {
-        type: 'delivery',
-        to: ticket.customerEmail.trim(),
-        ticketId: ticket.dispatchNoteNumber || ticket.id,
-        customerName: `${ticket.customerName || ''} ${ticket.customerSurname || ''}`.trim(),
-        filename: `Otpremnica_${ticket.dispatchNoteNumber || ticket.id}.pdf`,
-      };
-      printEmailRef.current = emailJob;
-      setPendingEmail(emailJob);
-    } else {
-      printEmailRef.current = null;
-      setPendingEmail(null);
-    }
+    await runPrintAndEmailJob({
+      render: () => {
+        setPrintableTicket(null);
+        setPrintableVhsTicket(null);
+        setPrintableDeliveryNote({ ...ticket });
+      },
+      emailJob,
+      toastRef,
+      skipPrintEffectRef,
+      successLabel: 'Otpremnica poslata na',
+    });
+
+    setTimeout(() => {
+      setPrintableDeliveryNote(null);
+      skipPrintEffectRef.current = false;
+    }, 500);
   };
 
   const handleTicketDeleteClick = (ticket) => {
