@@ -9,7 +9,17 @@ import { loadEnv } from './lib/migrate-utils.mjs';
 const env = loadEnv();
 const root = process.cwd();
 const raw = fs.readFileSync(path.join(root, '.env'), 'utf8');
-const read = (key) => raw.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1]?.trim();
+const read = (key) => {
+  let value = raw.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1]?.trim();
+  if (!value) return value;
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1);
+  }
+  return value;
+};
+
+const smtpPass = read('SMTP_PASS') || '';
+const smtpPassB64 = read('SMTP_PASS_B64') || (smtpPass ? Buffer.from(smtpPass, 'utf8').toString('base64') : '');
 
 const lines = [
   '# Hostinger Node.js → Environment variables → Import .env',
@@ -24,7 +34,7 @@ const lines = [
   `SMTP_PORT=${read('SMTP_PORT') || '465'}`,
   `SMTP_SECURE=${read('SMTP_SECURE') || 'true'}`,
   `SMTP_USER=${read('SMTP_USER') || 'servis@computerdoctor.in'}`,
-  `SMTP_PASS=${read('SMTP_PASS') || 'Servis1243#'}`,
+  `SMTP_PASS_B64=${smtpPassB64}`,
   `SMTP_FROM=${read('SMTP_FROM') || 'servis@computerdoctor.in'}`,
   `SMTP_FROM_NAME=${read('SMTP_FROM_NAME') || 'Computer Doctor'}`,
   '',
@@ -38,5 +48,7 @@ fs.writeFileSync(outPath, lines, 'utf8');
 console.log('=== hostinger.env kreiran ===\n');
 console.log(lines);
 console.log(`\nFajl: ${outPath}`);
-console.log('Hostinger → Node.js → Environment variables → Import .env → odaberi hostinger.env');
-console.log('Zatim: Redeploy');
+console.log('\nHostinger → Node.js → Environment variables:');
+console.log('1. Obriši staru varijablu SMTP_PASS (ako postoji)');
+console.log('2. Import .env → odaberi hostinger.env  ILI  Add: SMTP_PASS_B64=' + smtpPassB64);
+console.log('3. Redeploy');
