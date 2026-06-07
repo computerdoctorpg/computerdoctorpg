@@ -38,9 +38,11 @@ Rezultat je u folderu `dist/` — to ide na Hostinger.
 | Output directory | `dist` |
 | Node.js | 20 ili 22 |
 
-**Environment varijable (obavezno):**
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+**Environment varijable (obavezno u Hostinger panelu):**
+- `VITE_SUPABASE_URL` (ili `SUPABASE_URL`)
+- `VITE_SUPABASE_ANON_KEY` (ili `SUPABASE_ANON_KEY`)
+
+Nakon dodavanja klikni **Redeploy**.
 
 ## Deploy
 

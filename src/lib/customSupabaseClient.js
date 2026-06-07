@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseConfig } from '@/lib/getSupabaseConfig';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig();
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env');
+  throw new Error(
+    'Missing Supabase config. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Hostinger environment variables.'
+  );
 }
 
 const customSupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {

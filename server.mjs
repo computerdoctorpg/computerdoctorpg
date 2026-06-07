@@ -7,6 +7,13 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const distDir = join(__dirname, 'dist');
 const port = Number(process.env.PORT || 3000);
 
+const runtimeEnv = {
+  VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '',
+  VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
+};
+
+const envScript = `<script>window.__ENV__=${JSON.stringify(runtimeEnv)};</script>`;
+
 const mimeTypes = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -38,8 +45,22 @@ createServer((req, res) => {
   }
 
   const ext = extname(filePath);
+
+  if (ext === '.html') {
+    let html = readFileSync(filePath, 'utf8');
+    if (!html.includes('window.__ENV__')) {
+      html = html.replace('</head>', `${envScript}</head>`);
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(html);
+    return;
+  }
+
   res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
   res.end(readFileSync(filePath));
 }).listen(port, '0.0.0.0', () => {
   console.log(`PC Servis Admin running on port ${port}`);
+  if (!runtimeEnv.VITE_SUPABASE_URL || !runtimeEnv.VITE_SUPABASE_ANON_KEY) {
+    console.warn('WARNING: Supabase env variables are missing. Set them in Hostinger and redeploy.');
+  }
 });
