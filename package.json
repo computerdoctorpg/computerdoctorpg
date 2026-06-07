@@ -3,9 +3,13 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite --host :: --port 3000",
     "build": "vite build",
+    "start": "node server.mjs",
     "preview": "vite preview --host :: --port 3000",
     "lint": "eslint . --quiet",
     "reset-password": "node scripts/reset-admin-password.mjs",

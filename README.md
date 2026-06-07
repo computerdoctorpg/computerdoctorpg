@@ -23,9 +23,24 @@ Kopiraj `.env.example` u `.env` i popuni Supabase ključeve.
 
 ```powershell
 npm run build
+npm start
 ```
 
 Rezultat je u folderu `dist/` — to ide na Hostinger.
+
+### Hostinger Node.js Web App podešavanja
+
+| Polje | Vrijednost |
+|-------|------------|
+| Framework | Vite |
+| Build command | `npm run build` |
+| Start command | `npm start` |
+| Output directory | `dist` |
+| Node.js | 20 ili 22 |
+
+**Environment varijable (obavezno):**
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
 ## Deploy
 
