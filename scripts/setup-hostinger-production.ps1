@@ -38,7 +38,7 @@ Write-Host "=== U hPanelu uradi ovo ===" -ForegroundColor White
 Write-Host "1. Websites -> computerdoctor.in -> UKLONI stari Horizons/static sajt"
 Write-Host "2. Add Website -> Node.js Apps -> Import Git repo computerdoctorpg/computerdoctorpg branch main"
 Write-Host ("   ILI Upload ZIP: " + $zipPath)
-Write-Host "3. Build: npm run build | Start: npm start | Entry: server.mjs | Output: dist | Node: 20"
+Write-Host "3. Build: npm run build | Start: npm start | Entry: server.js | Output: dist | Node: 20"
 Write-Host "4. Environment variables -> zalijepi iz clipboarda"
 Write-Host "5. Deploy i sacekaj 2-5 min"
 Write-Host "6. Provjera: curl POST /api/send-ticket-email mora vratiti JSON 401, ne HTML"

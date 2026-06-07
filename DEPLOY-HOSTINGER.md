@@ -57,12 +57,12 @@ Ako `git push` traži lozinku → koristi **GitHub Personal Access Token** (Sett
 | Install command | `npm ci` |
 | Build command | `npm run build` |
 | **Start command** | **`npm start`** |
-| Entry file | **`server.mjs`** |
+| Entry file | **`server.js`** |
 | Output directory | **`dist`** |
 
 **NE** koristi samo „Static site“ / „Output: dist“ bez Node servera — email i korpa neće raditi.
 
-> Ako build padne za 3 sekunde bez logova: provjeri Framework = **Other**, Node = **20**, Start = **npm start**, Entry = **server.mjs**.
+> Ako build padne za 3 sekunde bez logova: provjeri Framework = **Other**, Node = **20**, Start = **npm start**, Entry = **server.js** (mora biti `.js`, ne `.mjs`).
 
 ---
 

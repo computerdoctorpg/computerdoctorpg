@@ -1,7 +1,7 @@
 {
   "name": "pc-servis-admin",
   "type": "module",
-  "main": "server.mjs",
+  "main": "server.js",
   "version": "0.0.0",
   "private": true,
   "engines": {
@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite --host :: --port 3000",
     "build": "vite build && node scripts/generate-runtime-env.mjs",
-    "start": "node server.mjs",
+    "start": "node server.js",
     "hostinger:build": "npm ci && npm run build",
     "preview": "vite preview --host :: --port 3000",
     "lint": "eslint . --quiet",
