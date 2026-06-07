@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "vite --host :: --port 3000",
-    "build": "vite build && node scripts/generate-runtime-env.mjs",
+    "build": "vite build && node scripts/generate-runtime-env.mjs && node scripts/build-pdf-bundle.mjs",
+    "predev": "node scripts/build-pdf-bundle.mjs",
     "start": "node server.js",
     "hostinger:build": "npm ci && npm run build",
     "preview": "vite preview --host :: --port 3000",

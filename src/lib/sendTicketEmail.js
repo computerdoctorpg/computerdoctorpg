@@ -5,7 +5,7 @@ export async function sendTicketEmail({
   type = 'intake',
   ticketId,
   customerName,
-  pdfBlob,
+  ticket,
   filename,
 }) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -13,16 +13,9 @@ export async function sendTicketEmail({
     throw new Error('Morate biti ulogovani da biste poslali email.');
   }
 
-  const pdfBase64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result?.split(',')[1];
-      if (!base64) reject(new Error('Neuspješno kodiranje PDF-a.'));
-      else resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(pdfBlob);
-  });
+  if (!ticket) {
+    throw new Error('Podaci dokumenta nisu proslijeđeni za email.');
+  }
 
   const response = await fetch('/api/send-ticket-email', {
     method: 'POST',
@@ -35,8 +28,8 @@ export async function sendTicketEmail({
       type,
       ticketId,
       customerName,
-      pdfBase64,
       filename,
+      ticket,
     }),
   });
 
@@ -56,7 +49,7 @@ export async function sendTicketEmail({
   }
 
   if (!response.ok) {
-    throw new Error(data.error || 'Email nije poslat.');
+    throw new Error(data.error || `Email nije poslat (${response.status}).`);
   }
   if (!data.ok) {
     throw new Error(data.error || 'Email API nije vratio potvrdu slanja.');

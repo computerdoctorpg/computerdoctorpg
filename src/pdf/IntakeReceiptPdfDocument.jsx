@@ -100,7 +100,7 @@ const TermsColumns = ({ terms, boldIndices }) => {
   );
 };
 
-export function IntakeReceiptPdfDocument({ ticket }) {
+export function IntakeReceiptPdfDocument({ ticket, logoSrc }) {
   const locale = getTicketLocale(ticket);
   const t = getPrintStrings(locale);
   const isWarranty = ticket.isWarranty;
@@ -108,13 +108,14 @@ export function IntakeReceiptPdfDocument({ ticket }) {
   const customerName = `${ticket.customerName || ''} ${ticket.customerSurname || ''}`.trim();
   const keepData = resolveKeepData(ticket);
   const ps = dataPolicyPdfStyles;
+  const logo = logoSrc || getAssetUrl('/images/logo.png');
 
   return (
     <Document>
       <Page size="A4" style={s.page}>
         <View style={s.headerRow}>
           <View style={s.headerLeft}>
-            <Image src={getAssetUrl('/images/logo.png')} style={s.logo} />
+            <Image src={logo} style={s.logo} />
             <View>
               <Text style={s.brandTitle}>COMPUTER DOCTOR</Text>
               <Text style={s.tagline}>{t.tagline}</Text>

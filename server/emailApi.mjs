@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
+import { generateDocumentPdfBuffer } from './pdfGenerator.mjs';
 
 const EMAIL_TYPES = {
   intake: {
@@ -154,7 +155,7 @@ export async function handleSendTicketEmail(req, res) {
     }
 
     const body = await readJsonBody(req);
-    const { to, type, ticketId, customerName, pdfBase64, filename } = body;
+    const { to, type, ticketId, customerName, pdfBase64, filename, ticket } = body;
 
     if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       res.writeHead(400);
@@ -162,14 +163,26 @@ export async function handleSendTicketEmail(req, res) {
       return;
     }
 
-    const emailType = EMAIL_TYPES[type] || EMAIL_TYPES.intake;
-    const pdfBuffer = pdfBase64 ? Buffer.from(pdfBase64, 'base64') : null;
+    let pdfBuffer = pdfBase64 ? Buffer.from(pdfBase64, 'base64') : null;
+
+    if (!pdfBuffer?.length && ticket) {
+      try {
+        pdfBuffer = await generateDocumentPdfBuffer(type || 'intake', ticket);
+      } catch (pdfError) {
+        console.error('Server PDF generation failed:', pdfError);
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: `PDF generisanje nije uspjelo: ${pdfError.message}` }));
+        return;
+      }
+    }
 
     if (!pdfBuffer?.length) {
       res.writeHead(400);
       res.end(JSON.stringify({ error: 'PDF prilog nije proslijeđen.' }));
       return;
     }
+
+    const emailType = EMAIL_TYPES[type] || EMAIL_TYPES.intake;
 
     const fromName = stripEnv(process.env.SMTP_FROM_NAME) || 'Computer Doctor';
     const fromEmail = stripEnv(process.env.SMTP_FROM) || stripEnv(process.env.SMTP_USER);

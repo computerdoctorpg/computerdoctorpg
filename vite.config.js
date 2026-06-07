@@ -39,6 +39,7 @@ const emailApiPlugin = (env) => ({
       process.env.SMTP_PORT = env.SMTP_PORT;
       process.env.SMTP_USER = env.SMTP_USER;
       process.env.SMTP_PASS = env.SMTP_PASS;
+      process.env.SMTP_PASS_B64 = env.SMTP_PASS_B64;
       process.env.SMTP_FROM = env.SMTP_FROM;
       process.env.SMTP_FROM_NAME = env.SMTP_FROM_NAME;
       process.env.SMTP_SECURE = env.SMTP_SECURE;

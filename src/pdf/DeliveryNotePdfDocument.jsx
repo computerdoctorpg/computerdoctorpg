@@ -61,7 +61,7 @@ const SerialRow = ({ label, value, none = 'NEMA' }) => (
   </View>
 );
 
-export function DeliveryNotePdfDocument({ ticket }) {
+export function DeliveryNotePdfDocument({ ticket, logoSrc }) {
   const partsCost = parseFloat(ticket.partsCost ?? ticket.parts_cost ?? 0) || 0;
   const serviceCost = parseFloat(ticket.serviceCost ?? ticket.service_cost ?? 0) || 0;
   const totalCost = partsCost + serviceCost;
@@ -77,12 +77,13 @@ export function DeliveryNotePdfDocument({ ticket }) {
   const keep = resolveKeepData(ticket);
   const ps = dataPolicyPdfStyles;
   const { deleteLabel, keepLabel } = getDataPolicyLabels(ticket);
+  const logo = logoSrc || getAssetUrl('/images/logo-delivery.png');
 
   return (
     <Document>
       <Page size="A4" style={s.page}>
         <View style={s.headerRow}>
-          <Image src={getAssetUrl('/images/logo-delivery.png')} style={s.logo} />
+          <Image src={logo} style={s.logo} />
           <View style={s.contactBlock}>
             <Text style={s.contactLine}>Bul. Ibrahima Koristovica bb, Podgorica</Text>
             <Text style={s.contactLine}>068/862-807 · prodaja@computer-doctor.me</Text>
