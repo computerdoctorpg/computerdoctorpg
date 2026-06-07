@@ -108,7 +108,7 @@ const EditVhsReceiptDialog = ({ isOpen, onClose, ticket, onSave, onPrint, isNewT
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isSaving && !isPrinting) onClose(); }}>
-      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
+      <DialogContent className="bg-slate-800 border-slate-700 text-white w-[calc(100vw-1.5rem)] sm:max-w-3xl lg:max-w-4xl max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <FileText className="w-5 h-5 text-amber-400" />

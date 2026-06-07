@@ -78,7 +78,7 @@ const Header = () => {
       <div className="app-container flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <img
-            className="h-14 sm:h-16 md:h-[4.75rem] w-auto object-contain shrink-0"
+            className="h-11 sm:h-12 w-auto object-contain shrink-0"
             alt="Computer Doctor"
             src="/images/logo.png"
           />

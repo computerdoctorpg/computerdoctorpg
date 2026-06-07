@@ -209,7 +209,7 @@ const TicketDetailsDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="bg-slate-800 border-slate-700 text-white w-[calc(100vw-1.5rem)] sm:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-3 border-b border-slate-700 pb-4">
             <div className="bg-blue-600/20 p-2 rounded-lg">

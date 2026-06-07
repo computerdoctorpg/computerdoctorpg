@@ -132,7 +132,7 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={!isSubmitting ? onClose : undefined}>
-      <DialogContent className='bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto'>
+      <DialogContent className='bg-slate-800 border-slate-700 text-white w-[calc(100vw-1.5rem)] sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle className='text-2xl font-bold text-white flex items-center gap-2'>
             {isWarranty ? (

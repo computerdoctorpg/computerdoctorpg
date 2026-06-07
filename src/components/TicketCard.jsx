@@ -228,13 +228,13 @@ const TicketCard = ({
             </>
           ) : (
             <>
-              <div className="flex items-start gap-2.5">
-                <div className={`shrink-0 rounded-lg bg-slate-950 border border-slate-600 flex items-center justify-center ${compact ? 'w-9 h-9 p-1' : 'w-11 h-11 p-1.5'}`}>
-                  <BrandLogo brand={brand} className={compact ? 'w-6 h-6' : 'w-7 h-7'} />
+              <div className="flex items-start gap-2">
+                <div className={`shrink-0 rounded-md bg-slate-950 border border-slate-600 flex items-center justify-center ${compact ? 'w-7 h-7 p-0.5' : 'w-8 h-8 p-1'}`}>
+                  <BrandLogo brand={brand} className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
                 </div>
                 <div className="min-w-0 flex-1">
                   {brand && (
-                    <p className="text-[10px] uppercase tracking-wide font-bold text-cyan-400/90 truncate">
+                    <p className="text-[9px] uppercase tracking-wide font-semibold text-cyan-400/80 truncate">
                       {brand}
                     </p>
                   )}

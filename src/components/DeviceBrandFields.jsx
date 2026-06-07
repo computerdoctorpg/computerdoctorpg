@@ -7,7 +7,7 @@ import {
   getBrandLogoUrl,
 } from '@/lib/deviceBrands';
 
-const BrandLogo = ({ brand, className = 'w-7 h-7' }) => {
+const BrandLogo = ({ brand, className = 'w-5 h-5' }) => {
   const [failed, setFailed] = useState(false);
   const logoUrl = getBrandLogoUrl(brand);
 
@@ -37,12 +37,35 @@ const DeviceBrandFields = ({
   inputClass,
 }) => {
   const isOther = brand === OTHER_BRAND_LABEL || (brand && !DEVICE_BRANDS.some((b) => b.label === brand));
+  const selectedBrand = isOther ? customBrand : brand;
 
   return (
     <div className="space-y-3">
       <div>
         <Label className="text-slate-300 text-xs">Brend *</Label>
-        <div className="flex gap-2 overflow-x-auto pb-1 mt-2 md:grid md:grid-cols-6 md:overflow-visible md:pb-0">
+
+        {/* Desktop: kompaktan select + mali logo */}
+        <div className="hidden md:flex items-center gap-3 mt-1">
+          {selectedBrand && (
+            <div className="w-8 h-8 rounded-md bg-slate-950 border border-slate-600 flex items-center justify-center shrink-0 p-1">
+              <BrandLogo brand={selectedBrand} className="w-5 h-5" />
+            </div>
+          )}
+          <select
+            value={brand || ''}
+            onChange={(e) => onBrandChange(e.target.value)}
+            className={`${inputClass} mt-0 flex-1`}
+          >
+            <option value="">Izaberite brend...</option>
+            {DEVICE_BRANDS.map((item) => (
+              <option key={item.id} value={item.label}>{item.label}</option>
+            ))}
+            <option value={OTHER_BRAND_LABEL}>{OTHER_BRAND_LABEL}</option>
+          </select>
+        </div>
+
+        {/* Mobil: horizontalni scroll — male ikonice */}
+        <div className="flex md:hidden gap-1.5 overflow-x-auto pb-1 mt-2">
           {DEVICE_BRANDS.map((item) => {
             const selected = brand === item.label;
             return (
@@ -50,33 +73,30 @@ const DeviceBrandFields = ({
                 key={item.id}
                 type="button"
                 onClick={() => onBrandChange(item.label)}
-                className={`shrink-0 flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors min-w-[4.5rem] md:min-w-0 ${
+                className={`shrink-0 flex flex-col items-center gap-0.5 p-1.5 rounded-md border transition-colors min-w-[3.25rem] ${
                   selected
-                    ? 'border-blue-500 bg-blue-500/20 ring-1 ring-blue-500/50'
-                    : 'border-slate-600 bg-slate-900/40 hover:border-slate-500'
+                    ? 'border-blue-500 bg-blue-500/20'
+                    : 'border-slate-600 bg-slate-900/40'
                 }`}
                 title={item.label}
               >
-                <BrandLogo brand={item.label} className="w-7 h-7" />
-                <span className="text-[10px] text-slate-300 font-medium truncate w-full text-center">
-                  {item.label}
-                </span>
+                <BrandLogo brand={item.label} className="w-5 h-5" />
+                <span className="text-[9px] text-slate-400 truncate w-full text-center">{item.label}</span>
               </button>
             );
           })}
           <button
             type="button"
             onClick={() => onBrandChange(OTHER_BRAND_LABEL)}
-            className={`shrink-0 flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors min-w-[4.5rem] md:min-w-0 ${
-              isOther
-                ? 'border-blue-500 bg-blue-500/20 ring-1 ring-blue-500/50'
-                : 'border-slate-600 bg-slate-900/40 hover:border-slate-500'
+            className={`shrink-0 flex flex-col items-center gap-0.5 p-1.5 rounded-md border min-w-[3.25rem] ${
+              isOther ? 'border-blue-500 bg-blue-500/20' : 'border-slate-600 bg-slate-900/40'
             }`}
           >
-            <span className="w-7 h-7 flex items-center justify-center text-xs font-bold text-slate-400">…</span>
-            <span className="text-[10px] text-slate-300 font-medium">{OTHER_BRAND_LABEL}</span>
+            <span className="w-5 h-5 flex items-center justify-center text-[10px] text-slate-400">…</span>
+            <span className="text-[9px] text-slate-400">{OTHER_BRAND_LABEL}</span>
           </button>
         </div>
+
         {brandError && <p className="text-red-400 text-xs mt-1">{brandError}</p>}
       </div>
 
