@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Lock, Loader2, Cloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+import { resolveLoginEmail } from '@/lib/operatorAuth';
+
 const getLoginErrorMessage = (error) => {
   const message = error?.message || '';
   const code = error?.code || error?.error_code || '';
 
   if (message === 'Invalid login credentials' || code === 'invalid_credentials') {
-    return 'Pogrešan email ili lozinka. Probaj iste podatke kao na www.computerdoctor.in, ili resetuj lozinku.';
+    return 'Pogrešno korisničko ime/email ili lozinka.';
   }
 
   if (message === 'Email not confirmed' || code === 'email_not_confirmed') {
@@ -28,22 +30,23 @@ const getLoginErrorMessage = (error) => {
 };
 
 const AuthPage = () => {
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
   const { signIn } = useAuth();
   const { toast } = useToast();
+  const isEmailLogin = login.includes('@');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const loginEmail = resolveLoginEmail(login);
 
     try {
-      const { data, error } = await signIn(normalizedEmail, password);
+      const { data, error } = await signIn(loginEmail, password);
 
       if (error) {
         console.error('Login error:', error);
@@ -72,13 +75,13 @@ const AuthPage = () => {
   };
 
   const handleResetPassword = async () => {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = resolveLoginEmail(login);
 
-    if (!normalizedEmail) {
+    if (!normalizedEmail || !login.includes('@')) {
       toast({
         variant: 'destructive',
-        title: 'Unesi email',
-        description: 'Upiši email adresu pa klikni reset lozinke.',
+        title: 'Reset lozinke',
+        description: 'Reset lozinke radi samo za admin email. Operateri ne koriste email — kontaktirajte admina.',
       });
       return;
     }
@@ -129,21 +132,22 @@ const AuthPage = () => {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email Adresa</Label>
+              <Label htmlFor="login" className="text-slate-200">Korisničko ime ili email</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="prodaja@computer-doctor.me"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="login"
+                type="text"
+                placeholder="Marko ili prodaja@computer-doctor.me"
+                value={login}
+                onChange={(e) => setLogin(e.target.value)}
                 className="bg-slate-950 border-slate-700 text-white placeholder:text-slate-400 caret-white focus:ring-blue-500"
                 required
                 autoFocus
-                autoComplete="email"
+                autoComplete="username"
               />
+              <p className="text-[11px] text-slate-500">Operateri: samo ime. Admin: pun email.</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Lozinka</Label>
+              <Label htmlFor="password" className="text-slate-200">Lozinka</Label>
               <Input
                 id="password"
                 type="password"
@@ -171,28 +175,27 @@ const AuthPage = () => {
               )}
             </Button>
 
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full text-slate-300 hover:text-white hover:bg-slate-700/50"
-              onClick={handleResetPassword}
-              disabled={isLoading || isResetting}
-            >
-              {isResetting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Slanje linka...
-                </>
-              ) : (
-                'Zaboravljena lozinka?'
-              )}
-            </Button>
+            {isEmailLogin && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-slate-300 hover:text-white hover:bg-slate-700/50"
+                onClick={handleResetPassword}
+                disabled={isLoading || isResetting}
+              >
+                {isResetting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Slanje linka...
+                  </>
+                ) : (
+                  'Zaboravljena lozinka?'
+                )}
+              </Button>
+            )}
 
             <p className="text-xs text-center text-slate-400 mt-0 leading-relaxed">
-              Baza je povezana. Ako ne možeš da se uloguješ, lozinka nije ispravna ili email nije potvrđen u Supabase.
-            </p>
-            <p className="text-xs text-center text-slate-500 mt-0">
-              Reset: Supabase Dashboard → Authentication → Users → korisnik → Reset password
+              Operateri se prijavljuju imenom koje im je dodijelio admin.
             </p>
           </CardFooter>
         </form>

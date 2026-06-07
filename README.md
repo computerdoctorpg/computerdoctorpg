@@ -39,8 +39,15 @@ Rezultat je u folderu `dist/` — to ide na Hostinger.
 | Node.js | 20 ili 22 |
 
 **Environment varijable (obavezno u Hostinger panelu):**
-- `VITE_SUPABASE_URL` (ili `SUPABASE_URL`)
-- `VITE_SUPABASE_ANON_KEY` (ili `SUPABASE_ANON_KEY`)
+
+| Varijabla | Obavezno |
+|-----------|----------|
+| `VITE_SUPABASE_URL` | Da |
+| `VITE_SUPABASE_ANON_KEY` | Da |
+| `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | Za email |
+| `SUPABASE_SERVICE_ROLE_KEY` | Za operatere |
+
+Start mora biti **`npm start`** (Node server), ne samo statički `dist/`.
 
 Nakon dodavanja klikni **Redeploy**.
 

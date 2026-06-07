@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { getOperatorDisplayName } from '@/lib/operatorAuth';
 
 const AuthContext = createContext(undefined);
 
@@ -32,25 +33,33 @@ export const AuthProvider = ({ children }) => {
         }
 
         let role = 'operater';
+        let displayName = '';
         if (activeUser?.id) {
           try {
             const { data, error } = await supabase
               .from('users')
-              .select('role')
+              .select('role, display_name')
               .eq('id', activeUser.id)
               .maybeSingle();
 
             if (error) {
               console.error('Error fetching user role from database:', error);
-            } else if (data?.role) {
-              role = data.role;
+            } else {
+              if (data?.role) role = data.role;
+              displayName = data?.display_name || '';
             }
           } catch (roleError) {
             console.error('Unexpected exception while fetching user role:', roleError);
           }
         }
 
-        setUser({ ...activeUser, role });
+        const enrichedUser = {
+          ...activeUser,
+          role,
+          displayName: displayName || getOperatorDisplayName(activeUser),
+        };
+
+        setUser(enrichedUser);
         setSession(currentSession);
       } catch (err) {
         console.error('Unexpected error during session handling:', err);
@@ -157,7 +166,8 @@ export const AuthProvider = ({ children }) => {
   const value = useMemo(() => {
     // Explicitly check for the admin email to ensure strict access control
     const isAdminUser = user?.email === 'prodaja@computer-doctor.me' || user?.role === 'admin';
-    
+    const isOperaterUser = !isAdminUser;
+
     return {
       user,
       session,
@@ -165,8 +175,9 @@ export const AuthProvider = ({ children }) => {
       signUp,
       signIn,
       signOut,
-      currentUser: user, // user object contains the email
-      isAdmin: isAdminUser
+      currentUser: user,
+      isAdmin: isAdminUser,
+      isOperater: isOperaterUser,
     };
   }, [user, session, loading, signUp, signIn, signOut]);
 

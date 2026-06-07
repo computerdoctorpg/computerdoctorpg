@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut, Cloud, ShieldAlert, Laptop, Loader2, Package, BarChart3 } from 'lucide-react';
 
+import { getOperatorDisplayName } from '@/lib/operatorAuth';
+
 const Header = () => {
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
@@ -13,6 +15,8 @@ const Header = () => {
 
   // Safely return null if user object doesn't exist to prevent crashes
   if (!user) return null;
+
+  const displayLabel = user.displayName || getOperatorDisplayName(user) || user.email || 'Nepoznat korisnik';
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -104,10 +108,10 @@ const Header = () => {
           <div className="flex flex-col items-end">
             <div className="flex items-center gap-2 text-slate-300 text-sm font-medium">
               <span className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-purple-500' : 'bg-blue-500'}`}></span>
-              {user?.email ? user.email : 'Nepoznat korisnik'}
+              {displayLabel}
             </div>
             <span className={`text-xs uppercase tracking-wider font-semibold ${isAdmin ? 'text-purple-400' : 'text-blue-400'}`}>
-              Uloga: {isAdmin ? 'Admin (Sve Dozvole)' : (user?.role || 'Operater')}
+              Uloga: {isAdmin ? 'Admin (Sve Dozvole)' : 'Operater'}
             </span>
           </div>
           <Button 

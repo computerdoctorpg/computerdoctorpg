@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.clients (
   last_name TEXT NOT NULL,
   email TEXT,
   phone TEXT NOT NULL UNIQUE,
+  is_warranty_client BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -48,8 +49,16 @@ CREATE TABLE IF NOT EXISTS public.tickets (
   service_cost NUMERIC(12, 2) NOT NULL DEFAULT 0,
   estimated_cost NUMERIC(12, 2) NOT NULL DEFAULT 0,
   dispatch_note_number TEXT,
+  is_warranty BOOLEAN NOT NULL DEFAULT FALSE,
+  warranty_until DATE,
+  warranty_invoice TEXT,
+  is_vhs BOOLEAN NOT NULL DEFAULT FALSE,
+  vhs_cassette_count INTEGER,
+  vhs_cassette_condition TEXT,
+  vhs_price_per_cassette NUMERIC(12, 2) DEFAULT 30,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  completed_at TIMESTAMPTZ
+  completed_at TIMESTAMPTZ,
+  deleted_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS public.parts_categories (
@@ -97,6 +106,9 @@ CREATE TABLE IF NOT EXISTS public.parts_sales_new (
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON public.tickets(status);
 CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON public.tickets(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_tickets_client_id ON public.tickets(client_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_is_warranty ON public.tickets(is_warranty);
+CREATE INDEX IF NOT EXISTS idx_tickets_is_vhs ON public.tickets(is_vhs);
+CREATE INDEX IF NOT EXISTS idx_tickets_deleted_at ON public.tickets(deleted_at) WHERE deleted_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_parts_category_id ON public.parts(category_id);
 CREATE INDEX IF NOT EXISTS idx_parts_sales_new_sale_date ON public.parts_sales_new(sale_date DESC);
 

@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { createOperatorAccount, deleteOperatorAccount } from '@/lib/adminUsersApi';
+import { getOperatorDisplayName, isOperatorInternalEmail } from '@/lib/operatorAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Users, Trash2, ShieldAlert, ArrowLeft, BarChart3, UserCircle as UsersCore } from 'lucide-react';
+import { Loader2, UserPlus, Users, Trash2, ShieldAlert, ArrowLeft, BarChart3, HardDrive } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import PartsSalesFinancialPage from './PartsSalesFinancialPage';
+import BackupTabContent from './BackupTabContent';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,17 +23,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const getUserLabel = (u) => {
+  if (u.display_name) return u.display_name;
+  return getOperatorDisplayName({ email: u.email });
+};
+
 const AdminPanel = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [userToDelete, setUserToDelete] = useState(null);
 
   const { isAdmin } = useAuth();
   const { toast } = useToast();
-  
+
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const defaultTab = queryParams.get('tab') || 'users';
@@ -45,16 +52,8 @@ const AdminPanel = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error in Supabase fetch:', error);
-        throw error;
-      }
-      
-      if (data && Array.isArray(data)) {
-        setUsers(data);
-      } else {
-        setUsers([]);
-      }
+      if (error) throw error;
+      setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -94,63 +93,24 @@ const AdminPanel = () => {
 
   const handleCreateOperator = async (e) => {
     e.preventDefault();
-    if (!email || !password) return;
+    const name = displayName.trim();
+    if (!name || !password) return;
     if (password.length < 6) {
-      toast({ variant: "destructive", title: "Greška", description: "Lozinka mora imati bar 6 karaktera."});
+      toast({ variant: "destructive", title: "Greška", description: "Lozinka mora imati bar 6 karaktera." });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const normalizedEmail = email.trim().toLowerCase();
-
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData?.session) {
-        throw new Error('Sesija nije pronađena. Molimo prijavite se ponovo.');
-      }
-
-      const accessToken = sessionData.session.access_token;
-
-      let createdViaEdgeFunction = false;
-
-      try {
-        const { error } = await supabase.functions.invoke('admin-users', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          },
-          body: { action: 'create', email: normalizedEmail, password }
-        });
-
-        if (!error) {
-          createdViaEdgeFunction = true;
-        }
-      } catch (edgeError) {
-        console.warn('Edge function unavailable, using signUp fallback:', edgeError);
-      }
-
-      if (!createdViaEdgeFunction) {
-        const { data, error: signUpError } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password,
-        });
-
-        if (signUpError) throw signUpError;
-        if (!data.user) throw new Error('Korisnik nije kreiran.');
-
-        const { error: profileError } = await supabase
-          .from('users')
-          .upsert({ id: data.user.id, email: normalizedEmail, role: 'operater' }, { onConflict: 'id' });
-
-        if (profileError) throw profileError;
-      }
+      const result = await createOperatorAccount(name, password);
 
       toast({
         title: "Uspešno",
-        description: `Korisnik ${normalizedEmail} je uspešno kreiran kao Operater.`,
+        description: `Operater "${name}" kreiran. Prijava: ime "${result.loginHint || name}" + lozinka.`,
         className: "bg-green-600 text-white"
       });
-      
-      setEmail('');
+
+      setDisplayName('');
       setPassword('');
       fetchUsers();
     } catch (error) {
@@ -167,29 +127,15 @@ const AdminPanel = () => {
 
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
-    
+
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData?.session) {
-        throw new Error('Sesija nije pronađena. Molimo prijavite se ponovo.');
-      }
-
-      const accessToken = sessionData.session.access_token;
-
-      const { data, error } = await supabase.functions.invoke('admin-users', {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        },
-        body: { action: 'delete', userId: userToDelete.id }
-      });
-
-      if (error) throw error;
+      await deleteOperatorAccount(userToDelete.id);
 
       toast({
         title: "Korisnik obrisan",
-        description: `Nalog ${userToDelete.email} je uspešno uklonjen.`,
+        description: `Nalog ${getUserLabel(userToDelete)} je uspešno uklonjen.`,
       });
-      
+
       setUserToDelete(null);
       fetchUsers();
     } catch (error) {
@@ -216,120 +162,137 @@ const AdminPanel = () => {
 
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="bg-slate-800 border border-slate-700 mb-6">
-          <TabsTrigger value="users" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2">
+          <TabsTrigger value="users" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2 text-slate-300">
             <Users className="w-4 h-4" />
             Operateri
           </TabsTrigger>
-          <TabsTrigger value="finances" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2">
+          <TabsTrigger value="finances" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2 text-slate-300">
             <BarChart3 className="w-4 h-4" />
             Finansije Dijelova
           </TabsTrigger>
+          <TabsTrigger value="backup" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2 text-slate-300">
+            <HardDrive className="w-4 h-4" />
+            Backup
+          </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="users" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Create User Form */}
-            <Card className="bg-slate-800 border-slate-700 text-white md:col-span-1 h-fit">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <div className="md:col-span-1 h-fit rounded-lg border border-slate-700 bg-slate-800 text-white shadow-sm">
+              <div className="flex flex-col space-y-1.5 p-6">
+                <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
                   <UserPlus className="w-5 h-5 text-blue-400" />
                   Novi Operater
-                </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Kreirajte novi nalog za radnika.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </h2>
+                <p className="text-sm text-slate-400">
+                  Unesite ime i lozinku. Operater se prijavljuje samo imenom (bez emaila).
+                </p>
+              </div>
+              <div className="p-6 pt-0">
                 <form onSubmit={handleCreateOperator} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Adresa</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="bg-slate-900 border-slate-600 text-white"
-                      placeholder="operater@computer-doctor.me"
+                    <Label htmlFor="displayName" className="text-slate-200">Ime operatera</Label>
+                    <Input
+                      id="displayName"
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="bg-slate-950 border-slate-600 text-white placeholder:text-slate-500"
+                      placeholder="npr. Marko"
                       required
+                      minLength={2}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Lozinka</Label>
-                    <Input 
-                      id="password" 
-                      type="password" 
+                    <Label htmlFor="password" className="text-slate-200">Lozinka</Label>
+                    <Input
+                      id="password"
+                      type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="bg-slate-900 border-slate-600 text-white"
+                      className="bg-slate-950 border-slate-600 text-white placeholder:text-slate-500"
                       placeholder="Min. 6 karaktera"
                       required
                       minLength={6}
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
                     Kreiraj Nalog
                   </Button>
                 </form>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            {/* Users List */}
-            <Card className="bg-slate-800 border-slate-700 text-white md:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <div className="md:col-span-2 rounded-lg border border-slate-700 bg-slate-800 text-white shadow-sm">
+              <div className="flex flex-col space-y-1.5 p-6">
+                <h2 className="text-2xl font-semibold leading-none tracking-tight flex items-center gap-2">
                   <Users className="w-5 h-5 text-purple-400" />
                   Aktivni Nalozi
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                </h2>
+              </div>
+              <div className="p-6 pt-0">
                 {isLoading ? (
                   <div className="flex justify-center p-8">
                     <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-lg border border-slate-700">
                     <table className="w-full text-sm text-left">
-                      <thead className="text-xs text-slate-400 uppercase bg-slate-900/50">
+                      <thead className="text-xs uppercase bg-slate-900 text-slate-300">
                         <tr>
-                          <th className="px-4 py-3 rounded-tl-lg">Email</th>
-                          <th className="px-4 py-3">Uloga</th>
-                          <th className="px-4 py-3">Kreiran</th>
-                          <th className="px-4 py-3 text-right rounded-tr-lg">Akcije</th>
+                          <th className="px-4 py-3 rounded-tl-lg font-semibold">Ime / Email</th>
+                          <th className="px-4 py-3 font-semibold">Uloga</th>
+                          <th className="px-4 py-3 font-semibold">Kreiran</th>
+                          <th className="px-4 py-3 text-right rounded-tr-lg font-semibold">Akcije</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {users.map((u) => (
-                          <tr key={u.id} className="border-b border-slate-700 last:border-0 hover:bg-slate-750">
-                            <td className="px-4 py-3 font-medium">{u.email}</td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                (u.role === 'admin' || u.email === 'prodaja@computer-doctor.me') ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                              }`}>
-                                {((u.role === 'admin' || u.email === 'prodaja@computer-doctor.me') ? 'admin' : u.role || 'OPERATER').toUpperCase()}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-slate-400">
-                              {new Date(u.created_at).toLocaleDateString('sr-RS')}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {u.role !== 'admin' && u.email !== 'prodaja@computer-doctor.me' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setUserToDelete(u)}
-                                  className="text-red-400 hover:text-red-300 hover:bg-red-900/30"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                      <tbody className="bg-slate-900/40">
+                        {users.map((u) => {
+                          const isUserAdmin = u.role === 'admin' || u.email === 'prodaja@computer-doctor.me';
+                          const label = getUserLabel(u);
+                          return (
+                            <tr key={u.id} className="border-b border-slate-700 last:border-0 hover:bg-slate-800/80">
+                              <td className="px-4 py-3">
+                                <p className="font-semibold text-white">{label}</p>
+                                {isOperatorInternalEmail(u.email) && (
+                                  <p className="text-[11px] text-slate-500 mt-0.5">Prijava: {label.toLowerCase()}</p>
+                                )}
+                                {!isOperatorInternalEmail(u.email) && (
+                                  <p className="text-[11px] text-slate-400 mt-0.5">{u.email}</p>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  isUserAdmin
+                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                                    : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                }`}>
+                                  {(isUserAdmin ? 'admin' : u.role || 'operater').toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-slate-300">
+                                {new Date(u.created_at).toLocaleDateString('sr-RS')}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {!isUserAdmin && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setUserToDelete(u)}
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-900/30"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                         {users.length === 0 && (
                           <tr>
                             <td colSpan="4" className="text-center py-8 text-slate-400">
@@ -341,13 +304,17 @@ const AdminPanel = () => {
                     </table>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </TabsContent>
 
         <TabsContent value="finances" className="mt-0">
           <PartsSalesFinancialPage />
+        </TabsContent>
+
+        <TabsContent value="backup" className="mt-0">
+          <BackupTabContent />
         </TabsContent>
       </Tabs>
 
@@ -356,7 +323,7 @@ const AdminPanel = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-400">Brisanje Operatera</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-300">
-              Da li ste sigurni da želite da obrišete nalog <strong>{userToDelete?.email}</strong>?
+              Da li ste sigurni da želite da obrišete nalog <strong className="text-white">{userToDelete ? getUserLabel(userToDelete) : ''}</strong>?
               Ova akcija će trajno ukloniti operatera iz sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>

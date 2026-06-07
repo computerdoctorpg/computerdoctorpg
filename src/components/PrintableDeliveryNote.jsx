@@ -45,7 +45,7 @@ const PrintableDeliveryNote = ({ ticket }) => {
             <Mail className="w-3 h-3" />
           </div>
           <div className="flex items-center justify-end gap-2">
-            <span>Radno vrijeme: Pon-Subota 9h-17h</span>
+            <span>Radno vrijeme: Pon–Pet 9h–16h, Sub 10h–13h</span>
             <Clock className="w-3 h-3" />
           </div>
         </div>
@@ -54,7 +54,16 @@ const PrintableDeliveryNote = ({ ticket }) => {
       {/* Title & Date */}
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h2 className="text-2xl font-bold uppercase tracking-wide">OTPREMNICA</h2>
+          <h2 className="text-2xl font-bold uppercase tracking-wide">
+            {ticket.isWarranty ? 'OTPREMNICA — GARANCIJA' : 'OTPREMNICA'}
+          </h2>
+          {ticket.isWarranty && (
+            <p className="text-[10px] font-bold text-emerald-700 mt-1 uppercase tracking-wide">
+              Garantni servis
+              {ticket.warrantyUntil && ` · Garancija do: ${new Date(ticket.warrantyUntil).toLocaleDateString('sr-RS')}`}
+              {ticket.warrantyInvoice && ` · Račun: ${ticket.warrantyInvoice}`}
+            </p>
+          )}
           <p className="text-sm font-mono text-gray-600 mt-1">
             Broj Otpremnice: <span className="font-bold text-black text-lg">#{dispatchNumber}</span>
           </p>

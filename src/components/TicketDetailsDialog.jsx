@@ -7,10 +7,14 @@ import { Label } from '@/components/ui/label';
 import { 
   Laptop, User, Wrench, 
   CheckCircle, PlayCircle, Printer, FileOutput, PenTool, 
-  History, Save, Smartphone, Calculator, Battery, MessageSquare, Loader2, Trash2, RotateCcw
+  History, Save, Smartphone, Calculator, Battery, MessageSquare, Loader2, Trash2, RotateCcw,
+  ChevronRight, Pencil, Mail
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { canDeleteTickets, canEditDocuments } from '@/lib/permissions';
+import { fetchTicketsByClientId } from '@/lib/db';
+import { buildCompletionViberMessage, openViberChat } from '@/lib/viberUtils';
 
 const TicketDetailsDialog = ({ 
   isOpen, 
@@ -19,11 +23,16 @@ const TicketDetailsDialog = ({
   onUpdateStatus, 
   onAddNotes,
   onPrintTicket,
+  onEditTicket,
   onPrintDeliveryNote,
-  onDeleteClick
+  onDeleteClick,
+  onOpenTicket
 }) => {
   const { toast } = useToast();
-  const { isAdmin } = useAuth(); // Import to verify role
+  const { isAdmin } = useAuth();
+  const canEdit = canEditDocuments(isAdmin);
+  const canDelete = canDeleteTickets(isAdmin);
+  const [sendDeliveryEmail, setSendDeliveryEmail] = useState(true);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -37,6 +46,8 @@ const TicketDetailsDialog = ({
   });
 
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [clientHistory, setClientHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const statusTranslations = {
     'pending': 'Na Čekanju',
@@ -45,31 +56,60 @@ const TicketDetailsDialog = ({
     'completed': 'Završeno'
   };
 
-  // Update local state when ticket opens/changes
+  // Učitaj formu samo pri otvaranju naloga — ne briši tekst tokom rada
   useEffect(() => {
-    if (ticket) {
+    if (ticket && isOpen) {
       setFormData({
         repairDetails: ticket.repairDetails || '',
         partsUsed: ticket.partsUsed || '',
-        partsCost: ticket.partsCost || '',
-        serviceCost: ticket.serviceCost || '',
-        estimatedCost: ticket.estimatedCost || '',
+        partsCost: ticket.partsCost ?? '',
+        serviceCost: ticket.serviceCost ?? '',
+        estimatedCost: ticket.estimatedCost ?? '',
         batterySerial: ticket.batterySerial || '',
         notes: ticket.notes || ''
       });
+      setSendDeliveryEmail(!!ticket.customerEmail?.trim());
     }
-  }, [ticket]);
+  }, [ticket?.id, isOpen]);
+
+  useEffect(() => {
+    if (!ticket?.clientId || !isOpen) {
+      setClientHistory([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingHistory(true);
+
+    fetchTicketsByClientId(ticket.clientId)
+      .then((data) => {
+        if (!cancelled) {
+          setClientHistory(data.filter((t) => t.id !== ticket.id));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setClientHistory([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingHistory(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [ticket?.clientId, ticket?.id, isOpen]);
 
   if (!ticket) return null;
   
   const isCompleted = ticket.status === 'completed';
 
-  const handleSave = () => {
-    onAddNotes(ticket.id, formData);
-    toast({
-      title: "Izmene Sačuvane",
-      description: "Detalji naloga su uspešno ažurirani.",
-    });
+  const handleSave = async () => {
+    setIsSavingNotes(true);
+    try {
+      await onAddNotes(ticket.id, formData);
+    } catch {
+      // Greška prikazana u addRepairNotes
+    } finally {
+      setIsSavingNotes(false);
+    }
   };
 
   const handleSaveNotesOnly = async () => {
@@ -103,11 +143,27 @@ const TicketDetailsDialog = ({
         return;
       }
       onUpdateStatus(ticket.id, newStatus, formData);
-      onClose(); // Optional: Close on complete
-    } else {
-      onUpdateStatus(ticket.id, newStatus);
-      // Let it stay open when changing to anything else, including 'open'
+      onClose();
+      return;
     }
+
+    if (newStatus === 'in-progress') {
+      const marker = 'Pristupio na popravku.';
+      const existing = formData.repairDetails.trim();
+      const alreadyMarked = existing.toLowerCase().includes('pristupio na popravku');
+      const repairDetails = alreadyMarked
+        ? existing
+        : existing
+          ? `${marker}\n\n${existing}`
+          : marker;
+
+      const payload = { ...formData, repairDetails };
+      setFormData(payload);
+      onUpdateStatus(ticket.id, newStatus, payload);
+      return;
+    }
+
+    onUpdateStatus(ticket.id, newStatus, formData);
   };
 
   const formatDate = (dateString) => {
@@ -121,39 +177,38 @@ const TicketDetailsDialog = ({
     });
   };
 
-  const handleViberClick = (e) => {
+  const handleViberClick = async (e) => {
     e.stopPropagation();
-    
-    let cleanPhone = ticket.customerPhone ? ticket.customerPhone.replace(/\D/g, '') : '';
-    if (!cleanPhone) {
+
+    const message = buildCompletionViberMessage(ticket, {
+      partsCost: formData.partsCost,
+      serviceCost: formData.serviceCost,
+      estimatedCost: formData.estimatedCost,
+    });
+
+    const result = await openViberChat(ticket.customerPhone, message);
+    if (!result.ok) {
       toast({
-        variant: "destructive",
-        title: "Greška",
-        description: "Broj telefona nije dostupan."
+        variant: 'destructive',
+        title: 'Greška',
+        description: 'Broj telefona nije dostupan.',
       });
       return;
     }
 
-    if (cleanPhone.startsWith('0')) cleanPhone = cleanPhone.substring(1);
-    if (!cleanPhone.startsWith('382')) cleanPhone = '382' + cleanPhone;
-
-    const message = "Pozdrav. Vaš uređaj je završen. Radimo od 9 do 17, subotom od 10 do 13.";
-    const encodedMessage = encodeURIComponent(message);
-    const viberUrl = `viber://chat?number=%2B${cleanPhone}&draft=${encodedMessage}`;
-    
-    window.location.href = viberUrl;
-    
     toast({
-      title: "Viber Poruka",
-      description: "Otvaranje Vibera sa pripremljenom porukom...",
-      duration: 3000,
+      title: 'Viber',
+      description: result.copied
+        ? 'Poruka kopirana. Zalijepite je u Viber (Ctrl+V).'
+        : 'Viber se otvara — kopirajte poruku ručno ako je polje prazno.',
+      duration: 5000,
     });
   };
 
   const totalActual = (parseFloat(formData.partsCost) || 0) + (parseFloat(formData.serviceCost) || 0);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-3 border-b border-slate-700 pb-4">
@@ -194,21 +249,48 @@ const TicketDetailsDialog = ({
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPrintTicket(ticket)}
-                className="border-slate-600 hover:bg-slate-700 text-slate-300"
-              >
-                <Printer className="w-4 h-4 mr-2" />
-                Prijemni List
-              </Button>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEditTicket?.(ticket)}
+                  className="border-amber-500/50 text-amber-400 hover:bg-amber-900/30 hover:text-amber-300"
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Uredi podatke
+                </Button>
+              )}
+
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPrintTicket(ticket)}
+                  className="border-slate-600 hover:bg-slate-700 text-slate-300"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Štampaj prijemni list
+                </Button>
+              )}
               {isCompleted && (
                 <>
+                  <label className="flex items-center gap-2 text-xs text-slate-400 px-1">
+                    <input
+                      type="checkbox"
+                      checked={sendDeliveryEmail}
+                      onChange={(e) => setSendDeliveryEmail(e.target.checked)}
+                      disabled={!ticket.customerEmail?.trim()}
+                      className="h-4 w-4 rounded"
+                    />
+                    <Mail className="w-3.5 h-3.5" />
+                    Pošalji otpremnicu na email
+                  </label>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onPrintDeliveryNote(ticket)}
+                    onClick={() => onPrintDeliveryNote(ticket, {
+                      sendEmail: sendDeliveryEmail && !!ticket.customerEmail?.trim(),
+                    })}
                     className="border-slate-600 hover:bg-slate-700 text-slate-300"
                   >
                     <FileOutput className="w-4 h-4 mr-2" />
@@ -227,7 +309,7 @@ const TicketDetailsDialog = ({
                 </Button>
 
                 {/* Role-based delete button strictly for Admin */}
-                {isAdmin && onDeleteClick && (
+                {canDelete && onDeleteClick && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -237,10 +319,10 @@ const TicketDetailsDialog = ({
                       onDeleteClick(ticket);
                     }}
                     className="border-red-500/50 text-red-400 hover:bg-red-900/30 hover:text-red-300"
-                    title="Trajno obriši nalog"
+                    title="Premjesti u korpu"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Obriši
+                    U korpu
                   </Button>
                 )}
             </div>
@@ -265,6 +347,37 @@ const TicketDetailsDialog = ({
                   <p className="font-medium">{ticket.customerPhone}</p>
                   <p className="text-slate-300 text-xs">{ticket.customerEmail || '-'}</p>
                 </div>
+                {(clientHistory.length > 0 || loadingHistory) && (
+                  <div className="pt-2 border-t border-slate-700/50">
+                    <p className="text-slate-400 text-xs mb-2 flex items-center gap-1">
+                      <History className="w-3 h-3" />
+                      Prethodni nalozi ({loadingHistory ? '...' : clientHistory.length})
+                    </p>
+                    {loadingHistory ? (
+                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Učitavanje...
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-[140px] overflow-y-auto">
+                        {clientHistory.map((prev) => (
+                          <button
+                            key={prev.id}
+                            type="button"
+                            onClick={() => onOpenTicket?.(prev)}
+                            className="w-full flex items-center gap-2 p-2 rounded-lg bg-slate-800/80 border border-slate-700/50 hover:border-blue-500/40 text-left transition-colors group"
+                          >
+                            <span className="font-mono text-xs text-blue-400 shrink-0">#{prev.id}</span>
+                            <span className="text-xs text-slate-300 truncate flex-1">{prev.deviceName}</span>
+                            <span className="text-[10px] text-slate-500 shrink-0">
+                              {new Date(prev.createdAt).toLocaleDateString('sr-RS')}
+                            </span>
+                            <ChevronRight className="w-3 h-3 text-slate-600 group-hover:text-blue-400 shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -413,7 +526,8 @@ const TicketDetailsDialog = ({
                   </div>
                 </div>
                 
-                {/* Financial Inputs */}
+                {/* Financial Inputs — samo admin */}
+                {isAdmin && (
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                      <Label className="text-slate-300 mb-1.5 block flex items-center gap-1">
@@ -463,7 +577,9 @@ const TicketDetailsDialog = ({
                     </div>
                   </div>
                 </div>
+                )}
 
+                {isAdmin && (
                 <div className="flex items-center justify-between bg-slate-950 p-4 rounded-lg border border-slate-800">
                   <div className="text-xs text-slate-500">
                     {formData.estimatedCost > 0 && (
@@ -482,6 +598,7 @@ const TicketDetailsDialog = ({
                     </span>
                   </div>
                 </div>
+                )}
               </div>
             </div>
 

@@ -1,19 +1,32 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Filter, LayoutGrid, BarChart3, RefreshCw, CalendarDays } from 'lucide-react';
+import { Search, Filter, LayoutGrid, BarChart3, RefreshCw, CalendarDays, Users, Laptop, Cpu, Shield, Film, Trash2 } from 'lucide-react';
 import AddTicketDialog from '@/components/AddTicketDialog';
+import AddVhsDialog, { VHS_PRICE_PER_CASSETTE } from '@/components/AddVhsDialog';
 import TicketList from '@/components/TicketList';
+import CustomerHistoryPanel from '@/components/CustomerHistoryPanel';
 import InvoiceDialog from '@/components/InvoiceDialog';
+import EditPrijemniListDialog from '@/components/EditPrijemniListDialog';
+import EditVhsReceiptDialog from '@/components/EditVhsReceiptDialog';
 import TicketDetailsDialog from '@/components/TicketDetailsDialog';
 import PrintableTicket from '@/components/PrintableTicket';
+import PrintableVhsTicket from '@/components/PrintableVhsTicket';
 import PrintableDeliveryNote from '@/components/PrintableDeliveryNote';
 import FinanceDashboard from '@/components/FinanceDashboard';
+import WarrantyTabContent from '@/components/WarrantyTabContent';
+import VhsTabContent from '@/components/VhsTabContent';
+import RecycleBinTabContent from '@/components/RecycleBinTabContent';
+import NewTicketMenu from '@/components/NewTicketMenu';
 import TicketSuccessDialog from '@/components/TicketSuccessDialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { upsertClient, createTicket, updateTicket, fetchAllTickets, deleteTicket } from '@/lib/db';
+import { canEditDocuments } from '@/lib/permissions';
+import { upsertClient, createTicket, updateTicket, fetchAllTickets, fetchDeletedTickets, deleteTicket, restoreTicket, permanentlyDeleteTicket, getRecycleBinMode, isSoftDeleteDbSupported, probeSoftDeleteSupport } from '@/lib/db';
+import { generatePdfFromElement } from '@/lib/generateTicketPdf';
+import { sendTicketEmail } from '@/lib/sendTicketEmail';
+import { ticketMatchesSearch, ticketMatchesBrandModel, getClientTicketCounts, getMonthKey, getDayKey, formatDayKeyDisplay, getUniqueBrands } from '@/lib/ticketUtils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +41,8 @@ import {
 const RepairTicketsDashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [addTicketIsWarranty, setAddTicketIsWarranty] = useState(false);
+  const [isAddVhsDialogOpen, setIsAddVhsDialogOpen] = useState(false);
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -37,12 +52,32 @@ const RepairTicketsDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [ticketToDelete, setTicketToDelete] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [ticketToPermanentDelete, setTicketToPermanentDelete] = useState(null);
+  const [isPermanentDeleteDialogOpen, setIsPermanentDeleteDialogOpen] = useState(false);
+  const [deletedTickets, setDeletedTickets] = useState([]);
+  const [isDeletedLoading, setIsDeletedLoading] = useState(false);
+  const [recycleBinMode, setRecycleBinMode] = useState('local');
 
   const [printableTicket, setPrintableTicket] = useState(null);
+  const [printableVhsTicket, setPrintableVhsTicket] = useState(null);
   const [printableDeliveryNote, setPrintableDeliveryNote] = useState(null);
+  const [pendingEmail, setPendingEmail] = useState(null);
+  const printEmailRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
+  const [filterDay, setFilterDay] = useState('all');
+  const [filterBrand, setFilterBrand] = useState('');
+  const [filterModel, setFilterModel] = useState('');
+
+  const [isPrijemniEditOpen, setIsPrijemniEditOpen] = useState(false);
+  const [prijemniEditTicket, setPrijemniEditTicket] = useState(null);
+  const [isNewPrijemniTicket, setIsNewPrijemniTicket] = useState(false);
+  const [prijemniStartPreview, setPrijemniStartPreview] = useState(false);
+  const [isVhsEditOpen, setIsVhsEditOpen] = useState(false);
+  const [vhsEditTicket, setVhsEditTicket] = useState(null);
+  const [isNewVhsTicket, setIsNewVhsTicket] = useState(false);
+  const [activeTab, setActiveTab] = useState('tickets');
   
   const { toast } = useToast();
   // Ensure user and isAdmin are extracted safely with defaults
@@ -63,6 +98,7 @@ const RepairTicketsDashboard = () => {
         setTickets(fetchedTickets);
       }
       setRetryCount(0);
+      return fetchedTickets || [];
     } catch (error) {
       console.error("Error loading tickets:", error);
       toast({
@@ -79,6 +115,7 @@ const RepairTicketsDashboard = () => {
           </Button>
         )
       });
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +124,35 @@ const RepairTicketsDashboard = () => {
   useEffect(() => {
     loadTickets();
   }, [loadTickets, retryCount]);
+
+  const loadDeletedTickets = useCallback(async () => {
+    if (!isAdmin) return [];
+    setIsDeletedLoading(true);
+    try {
+      const fetched = await fetchDeletedTickets();
+      setDeletedTickets(fetched || []);
+      await probeSoftDeleteSupport();
+      const mode = await getRecycleBinMode(isSoftDeleteDbSupported());
+      setRecycleBinMode(mode);
+      return fetched || [];
+    } catch (error) {
+      console.error('Error loading deleted tickets:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Greška',
+        description: 'Neuspešno učitavanje korpe za otpatke.',
+      });
+      return [];
+    } finally {
+      setIsDeletedLoading(false);
+    }
+  }, [isAdmin, toast]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadDeletedTickets();
+    }
+  }, [isAdmin, loadDeletedTickets]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -106,9 +172,13 @@ const RepairTicketsDashboard = () => {
     return () => window.removeEventListener('ticket-updated', handleTicketUpdated);
   }, [loadTickets]);
 
+  const regularTickets = useMemo(() => tickets.filter((t) => t.isWarranty !== true && t.isVhs !== true), [tickets]);
+  const warrantyTickets = useMemo(() => tickets.filter((t) => t.isWarranty === true), [tickets]);
+  const vhsTickets = useMemo(() => tickets.filter((t) => t.isVhs === true), [tickets]);
+
   const availableMonths = useMemo(() => {
     const months = new Set();
-    tickets.forEach(ticket => {
+    regularTickets.forEach(ticket => {
       if (ticket.createdAt) {
         const date = new Date(ticket.createdAt);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -116,7 +186,25 @@ const RepairTicketsDashboard = () => {
       }
     });
     return Array.from(months).sort().reverse();
-  }, [tickets]);
+  }, [regularTickets]);
+
+  const availableDays = useMemo(() => {
+    const days = new Set();
+    regularTickets.forEach((ticket) => {
+      if (!ticket.createdAt) return;
+      if (filterMonth !== 'all' && getMonthKey(ticket.createdAt) !== filterMonth) return;
+      days.add(getDayKey(ticket.createdAt));
+    });
+    return Array.from(days).sort().reverse();
+  }, [regularTickets, filterMonth]);
+
+  useEffect(() => {
+    setFilterDay('all');
+  }, [filterMonth]);
+
+  const handleMonthChange = (value) => {
+    setFilterMonth(value);
+  };
 
   const formatMonthDisplay = (monthKey) => {
     const [year, month] = monthKey.split('-');
@@ -124,18 +212,62 @@ const RepairTicketsDashboard = () => {
     return date.toLocaleDateString('sr-RS', { month: 'long', year: 'numeric' });
   };
 
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterStatus('all');
+    setFilterMonth('all');
+    setFilterDay('all');
+    setFilterBrand('');
+    setFilterModel('');
+  };
+
   useEffect(() => {
-    if (printableTicket || printableDeliveryNote) {
-      const timer = setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          setPrintableTicket(null);
-          setPrintableDeliveryNote(null);
-        }, 500);
-      }, 800); 
-      return () => clearTimeout(timer);
-    }
-  }, [printableTicket, printableDeliveryNote]);
+    if (!printableTicket && !printableVhsTicket && !printableDeliveryNote) return;
+
+    const emailJob = printEmailRef.current;
+    const delay = emailJob ? 1600 : 800;
+
+    const timer = setTimeout(async () => {
+      if (emailJob) {
+        try {
+          const el = document.querySelector(`[data-print-type="${emailJob.type}"]`);
+          if (!el) throw new Error('PDF prijemnica nije spremna za slanje.');
+          const pdfBlob = await generatePdfFromElement(el);
+          await sendTicketEmail({
+            to: emailJob.to,
+            type: emailJob.type,
+            ticketId: emailJob.ticketId,
+            customerName: emailJob.customerName,
+            pdfBlob,
+            filename: emailJob.filename,
+          });
+          toast({
+            title: 'Email poslat',
+            description: `Dokument poslat na ${emailJob.to}`,
+            className: 'bg-emerald-600 text-white border-none',
+          });
+        } catch (error) {
+          console.error('Email send failed:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Email nije poslat',
+            description: error.message || 'Provjerite SMTP podešavanja na serveru.',
+          });
+        }
+        printEmailRef.current = null;
+        setPendingEmail(null);
+      }
+
+      window.print();
+      setTimeout(() => {
+        setPrintableTicket(null);
+        setPrintableVhsTicket(null);
+        setPrintableDeliveryNote(null);
+      }, 500);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [printableTicket, printableVhsTicket, printableDeliveryNote, toast]);
 
   const addTicket = async (ticketData) => {
     if (!user) {
@@ -154,17 +286,21 @@ const RepairTicketsDashboard = () => {
         first_name: ticketData.customerName,
         last_name: ticketData.customerSurname,
         email: ticketData.customerEmail,
-        phone: ticketData.customerPhone
+        phone: ticketData.customerPhone,
+        is_warranty_client: addTicketIsWarranty ? true : undefined,
       });
 
       const history = [{
         date: new Date().toISOString(),
-        action: 'Nalog kreiran',
-        description: `Servisni nalog registrovan (Operater: ${user.email})`
+        action: addTicketIsWarranty ? 'Garantni nalog kreiran' : 'Nalog kreiran',
+        description: addTicketIsWarranty
+          ? `Garantni servisni nalog registrovan (Operater: ${user.email})`
+          : `Servisni nalog registrovan (Operater: ${user.email})`
       }];
       
       const fullTicketData = {
         ...ticketData,
+        isWarranty: addTicketIsWarranty,
         createdAt: new Date().toISOString(),
         history
       };
@@ -177,19 +313,23 @@ const RepairTicketsDashboard = () => {
       
       const ticketForPrint = { 
         ...fullTicketData, 
-        id: newTicket.ticket_number, 
-        status: 'pending' 
+        id: newTicket.ticket_number,
+        clientId: client.id,
+        status: 'pending',
+        isWarranty: addTicketIsWarranty,
       };
       
-      // Setup print target for later if they click print in success dialog
       setSelectedTicket(ticketForPrint);
-      
       setIsAddDialogOpen(false);
-      setIsSuccessDialogOpen(true);
+      setAddTicketIsWarranty(false);
+      setIsSuccessDialogOpen(false);
+      setPrijemniEditTicket(ticketForPrint);
+      setIsNewPrijemniTicket(true);
+      setIsPrijemniEditOpen(true);
       
       toast({
         title: "Uspešno",
-        description: `Nalog ${newTicket.ticket_number} sačuvan u cloud bazi.`,
+        description: `Nalog ${newTicket.ticket_number} kreiran. Uredite prijemni list prije štampe.`,
         className: "bg-green-600 text-white border-none"
       });
     } catch (error) {
@@ -204,12 +344,90 @@ const RepairTicketsDashboard = () => {
     }
   };
 
+  const addVhsTicket = async (formData) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Pristup odbijen', description: 'Morate biti prijavljeni.' });
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const count = formData.vhsCassetteCount || 1;
+      const total = count * VHS_PRICE_PER_CASSETTE;
+
+      const client = await upsertClient({
+        first_name: formData.customerName,
+        last_name: formData.customerSurname,
+        phone: formData.customerPhone,
+      });
+
+      const history = [{
+        date: new Date().toISOString(),
+        action: 'VHS prijem kreiran',
+        description: `Prijem ${count} VHS kaseta (Operater: ${user.email})`,
+      }];
+
+      const fullTicketData = {
+        customerName: formData.customerName,
+        customerSurname: formData.customerSurname,
+        customerPhone: formData.customerPhone,
+        deviceName: `VHS digitalizacija (${count} kaseta)`,
+        deviceSerial: '-',
+        issueDescription: 'Digitalizacija VHS kaseta u MP4 format na USB',
+        notes: formData.notes || '',
+        isVhs: true,
+        vhsCassetteCount: count,
+        vhsCassetteCondition: formData.vhsCassetteCondition,
+        vhsPricePerCassette: VHS_PRICE_PER_CASSETTE,
+        estimatedCost: total,
+        serviceCost: total,
+        createdAt: new Date().toISOString(),
+        history,
+      };
+
+      const newTicket = await createTicket(fullTicketData, client.id);
+      await loadTickets();
+
+      const ticketForPrint = {
+        ...fullTicketData,
+        id: newTicket.ticket_number,
+        clientId: client.id,
+        status: 'pending',
+      };
+
+      setIsAddVhsDialogOpen(false);
+      setVhsEditTicket(ticketForPrint);
+      setIsNewVhsTicket(true);
+      setIsVhsEditOpen(true);
+
+      toast({
+        title: 'Uspešno',
+        description: `VHS prijem ${newTicket.ticket_number} kreiran. Uredite prijemnici prije štampe.`,
+        className: 'bg-amber-600 text-white border-none',
+      });
+    } catch (error) {
+      console.error('Error in addVhsTicket:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Greška',
+        description: error.message || 'Neuspešno kreiranje VHS prijema.',
+      });
+      throw error;
+    }
+  };
+
   const handlePrintFromSuccessDialog = () => {
     setIsSuccessDialogOpen(false);
     if (selectedTicket) {
-      setPrintableDeliveryNote(null);
-      // Create a fresh copy of ticket just in case to ensure re-render
-      setPrintableTicket({ ...selectedTicket });
+      if (selectedTicket.isVhs) {
+        setVhsEditTicket({ ...selectedTicket });
+        setIsNewVhsTicket(false);
+        setIsVhsEditOpen(true);
+        return;
+      }
+      setPrijemniEditTicket({ ...selectedTicket });
+      setIsNewPrijemniTicket(false);
+      setPrijemniStartPreview(true);
+      setIsPrijemniEditOpen(true);
     }
   };
 
@@ -217,16 +435,26 @@ const RepairTicketsDashboard = () => {
     if (!user) return;
     try {
       const statusText = statusTranslations[newStatus] || newStatus;
-      const historyEntry = {
-        date: new Date().toISOString(),
-        action: `Status promenjen u ${statusText}`,
-        description: updates.repairDetails || `Nalog označen kao ${statusText}`
-      };
-
       const currentTicket = tickets.find(t => t.id === ticketId);
+
+      let historyEntry;
+      if (newStatus === 'in-progress') {
+        historyEntry = {
+          date: new Date().toISOString(),
+          action: 'Pristupio na popravku',
+          description: updates.repairDetails?.trim() || 'Popravka započeta',
+        };
+      } else {
+        historyEntry = {
+          date: new Date().toISOString(),
+          action: `Status promenjen u ${statusText}`,
+          description: updates.repairDetails?.trim() || `Nalog označen kao ${statusText}`,
+        };
+      }
+
       const newHistory = [...(currentTicket?.history || []), historyEntry];
       
-      const completedAt = newStatus === 'completed' ? new Date().toISOString() : currentTicket.completedAt;
+      const completedAt = newStatus === 'completed' ? new Date().toISOString() : currentTicket?.completedAt;
 
       const updatedTicket = await updateTicket(ticketId, {
         status: newStatus,
@@ -235,17 +463,25 @@ const RepairTicketsDashboard = () => {
         history: newHistory
       });
 
-      await loadTickets();
+      const freshTickets = await loadTickets();
       
       if (selectedTicket && selectedTicket.id === ticketId) {
-        const refreshedTicket = tickets.find(t => t.id === ticketId);
-        // Explicitly check if we are keeping dialog open or replacing
-        if (refreshedTicket) setSelectedTicket(refreshedTicket);
+        const refreshedTicket = freshTickets?.find(t => t.id === ticketId);
+        if (refreshedTicket) {
+          setSelectedTicket({
+            ...refreshedTicket,
+            ...updates,
+            status: newStatus,
+            history: newHistory,
+          });
+        }
       }
 
       toast({
-        title: "Status Ažuriran",
-        description: `Nalog označen kao ${statusText}.`
+        title: newStatus === 'in-progress' ? 'Popravka započeta' : 'Status Ažuriran',
+        description: newStatus === 'in-progress'
+          ? 'Status: U radu. Uneseni tekst je sačuvan.'
+          : `Nalog označen kao ${statusText}.`,
       });
 
       if (newStatus === 'completed' && updatedTicket) {
@@ -285,11 +521,16 @@ const RepairTicketsDashboard = () => {
         history: newHistory
       });
 
-      await loadTickets();
+      const freshTickets = await loadTickets();
       
       if (selectedTicket && selectedTicket.id === ticketId) {
-        const refreshedTicket = tickets.find(t => t.id === ticketId);
-        if (refreshedTicket) setSelectedTicket(refreshedTicket);
+        const refreshedTicket = freshTickets?.find(t => t.id === ticketId);
+        if (refreshedTicket) {
+          setSelectedTicket({
+            ...refreshedTicket,
+            ...(typeof updates === 'object' ? updates : {}),
+          });
+        }
       }
       
       toast({
@@ -303,6 +544,7 @@ const RepairTicketsDashboard = () => {
         title: "Greška",
         description: "Neuspešno čuvanje podataka."
       });
+      throw error;
     }
   };
 
@@ -316,15 +558,255 @@ const RepairTicketsDashboard = () => {
     setIsInvoiceDialogOpen(true);
   };
 
-  const handlePrintTicket = ticket => {
-    setPrintableDeliveryNote(null);
-    // Explicitly copy to force fresh render in PrintableTicket
-    setPrintableTicket({ ...ticket });
+  const savePrijemniListChanges = async (editedTicket) => {
+    if (!user || !editedTicket?.id) {
+      throw new Error('Nalog nije validan za čuvanje.');
+    }
+
+    const currentTicket = tickets.find((t) => t.id === editedTicket.id) || editedTicket;
+    const historyEntry = {
+      date: new Date().toISOString(),
+      action: 'Podaci naloga ažurirani',
+      description: 'Izmijenjeni podaci klijenta, uređaja ili prijemnog lista',
+    };
+    const newHistory = [...(currentTicket.history || []), historyEntry];
+
+    const client = await upsertClient({
+      first_name: editedTicket.customerName,
+      last_name: editedTicket.customerSurname,
+      phone: editedTicket.customerPhone,
+      email: editedTicket.customerEmail || null,
+      is_warranty_client: editedTicket.isWarranty ? true : undefined,
+    });
+
+    await updateTicket(editedTicket.id, {
+      clientId: client.id,
+      deviceName: editedTicket.deviceName,
+      deviceSerial: editedTicket.deviceSerial,
+      chargerSerial: editedTicket.chargerSerial || '',
+      batterySerial: editedTicket.batterySerial || '',
+      issueDescription: editedTicket.issueDescription,
+      notes: editedTicket.notes ?? '',
+      osPassword: editedTicket.osPassword || '',
+      keepData: !!editedTicket.keepData,
+      hasBag: !!editedTicket.hasBag,
+      bagDescription: editedTicket.bagDescription || '',
+      warrantyUntil: editedTicket.warrantyUntil || null,
+      warrantyInvoice: editedTicket.warrantyInvoice || null,
+      history: newHistory,
+    });
+
+    const freshTickets = await loadTickets();
+    const saved = freshTickets?.find((t) => t.id === editedTicket.id);
+    const merged = saved
+      ? {
+          ...saved,
+          customerName: editedTicket.customerName,
+          customerSurname: editedTicket.customerSurname,
+          customerPhone: editedTicket.customerPhone,
+          customerEmail: editedTicket.customerEmail || saved.customerEmail,
+          clientId: client.id,
+        }
+      : { ...editedTicket, clientId: client.id, history: newHistory };
+
+    setSelectedTicket((prev) => (prev?.id === editedTicket.id ? merged : prev));
+    return merged;
   };
 
-  const handlePrintDeliveryNote = ticket => {
+  const saveVhsChanges = async (editedTicket) => {
+    if (!user || !editedTicket?.id) throw new Error('Nalog nije validan za čuvanje.');
+
+    const currentTicket = tickets.find((t) => t.id === editedTicket.id) || editedTicket;
+    const count = parseInt(editedTicket.vhsCassetteCount, 10) || 1;
+    const total = count * VHS_PRICE_PER_CASSETTE;
+
+    const historyEntry = {
+      date: new Date().toISOString(),
+      action: 'VHS prijem ažuriran',
+      description: 'Izmijenjeni podaci klijenta ili kaseta',
+    };
+    const newHistory = [...(currentTicket.history || []), historyEntry];
+
+    const client = await upsertClient({
+      first_name: editedTicket.customerName,
+      last_name: editedTicket.customerSurname,
+      phone: editedTicket.customerPhone,
+    });
+
+    await updateTicket(editedTicket.id, {
+      clientId: client.id,
+      deviceName: `VHS digitalizacija (${count} kaseta)`,
+      notes: editedTicket.notes ?? '',
+      vhsCassetteCount: count,
+      vhsCassetteCondition: editedTicket.vhsCassetteCondition || '',
+      vhsPricePerCassette: VHS_PRICE_PER_CASSETTE,
+      serviceCost: total,
+      estimatedCost: total,
+      history: newHistory,
+    });
+
+    const freshTickets = await loadTickets();
+    const saved = freshTickets?.find((t) => t.id === editedTicket.id);
+    const merged = saved
+      ? {
+          ...saved,
+          customerName: editedTicket.customerName,
+          customerSurname: editedTicket.customerSurname,
+          customerPhone: editedTicket.customerPhone,
+          clientId: client.id,
+          vhsCassetteCount: count,
+          vhsCassetteCondition: editedTicket.vhsCassetteCondition,
+          notes: editedTicket.notes,
+        }
+      : { ...editedTicket, clientId: client.id, history: newHistory };
+
+    setSelectedTicket((prev) => (prev?.id === editedTicket.id ? merged : prev));
+    return merged;
+  };
+
+  const handleVhsSave = async (editedTicket) => {
+    try {
+      const saved = await saveVhsChanges(editedTicket);
+      setVhsEditTicket(saved);
+      setIsNewVhsTicket(false);
+      toast({ title: 'Sačuvano', description: 'VHS prijem ažuriran.', className: 'bg-green-600 text-white border-none' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje.' });
+      throw error;
+    }
+  };
+
+  const handleVhsPrint = async (payload) => {
+    const saveTicket = payload?.saveTicket ?? payload;
+    const printTicket = payload?.printTicket ?? payload;
+    try {
+      const saved = await saveVhsChanges(saveTicket);
+      setIsVhsEditOpen(false);
+      setIsNewVhsTicket(false);
+      setPrintableTicket(null);
+      setPrintableDeliveryNote(null);
+      setPrintableVhsTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje prije štampe.' });
+      throw error;
+    }
+  };
+
+  const handlePrijemniSave = async (editedTicket) => {
+    try {
+      const saved = await savePrijemniListChanges(editedTicket);
+      setPrijemniEditTicket(saved);
+      setIsPrijemniEditOpen(false);
+      setIsNewPrijemniTicket(false);
+      toast({ title: 'Sačuvano', description: 'Podaci naloga su ažurirani u bazi.', className: 'bg-green-600 text-white border-none' });
+    } catch (error) {
+      console.error('Error saving prijemni list:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Greška',
+        description: error.message || 'Neuspešno čuvanje podataka.',
+      });
+      throw error;
+    }
+  };
+
+  const handlePrijemniPrint = async (payload) => {
+    const saveTicket = payload?.saveTicket ?? payload;
+    const printTicket = payload?.printTicket ?? payload;
+    try {
+      const saved = await savePrijemniListChanges(saveTicket);
+      setIsPrijemniEditOpen(false);
+      setIsNewPrijemniTicket(false);
+      setPrintableDeliveryNote(null);
+
+      if (payload?.sendEmail && saveTicket.customerEmail?.trim()) {
+        const emailJob = {
+          type: 'intake',
+          to: saveTicket.customerEmail.trim(),
+          ticketId: saved.id,
+          customerName: `${saveTicket.customerName || ''} ${saveTicket.customerSurname || ''}`.trim(),
+          filename: `Prijemnica_${saved.id}.pdf`,
+        };
+        printEmailRef.current = emailJob;
+        setPendingEmail(emailJob);
+      } else {
+        printEmailRef.current = null;
+        setPendingEmail(null);
+      }
+
+      setPrintableTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
+    } catch (error) {
+      console.error('Error saving before print:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Greška',
+        description: error.message || 'Neuspešno čuvanje prije štampe.',
+      });
+      throw error;
+    }
+  };
+
+  const handleEditTicket = (ticket) => {
+    if (!canEditDocuments(isAdmin)) {
+      toast({
+        variant: 'destructive',
+        title: 'Pristup odbijen',
+        description: 'Operateri ne mogu uređivati prijemnice i dokumenta.',
+      });
+      return;
+    }
+    if (ticket.isVhs) {
+      setVhsEditTicket({ ...ticket });
+      setIsNewVhsTicket(false);
+      setIsVhsEditOpen(true);
+      return;
+    }
+    setPrijemniEditTicket({ ...ticket });
+    setIsNewPrijemniTicket(false);
+    setPrijemniStartPreview(false);
+    setIsPrijemniEditOpen(true);
+  };
+
+  const handlePrintTicket = (ticket) => {
+    if (!canEditDocuments(isAdmin)) {
+      toast({
+        variant: 'destructive',
+        title: 'Pristup odbijen',
+        description: 'Operateri ne mogu štampati ili uređivati prijemnice.',
+      });
+      return;
+    }
+    if (ticket.isVhs) {
+      setVhsEditTicket({ ...ticket });
+      setIsNewVhsTicket(false);
+      setIsVhsEditOpen(true);
+      return;
+    }
+    setPrijemniEditTicket({ ...ticket });
+    setIsNewPrijemniTicket(false);
+    setPrijemniStartPreview(true);
+    setIsPrijemniEditOpen(true);
+  };
+
+  const handlePrintDeliveryNote = (ticket, options = {}) => {
     setPrintableTicket(null);
+    setPrintableVhsTicket(null);
     setPrintableDeliveryNote({ ...ticket });
+
+    if (options.sendEmail && ticket.customerEmail?.trim()) {
+      const emailJob = {
+        type: 'delivery',
+        to: ticket.customerEmail.trim(),
+        ticketId: ticket.dispatchNoteNumber || ticket.id,
+        customerName: `${ticket.customerName || ''} ${ticket.customerSurname || ''}`.trim(),
+        filename: `Otpremnica_${ticket.dispatchNoteNumber || ticket.id}.pdf`,
+      };
+      printEmailRef.current = emailJob;
+      setPendingEmail(emailJob);
+    } else {
+      printEmailRef.current = null;
+      setPendingEmail(null);
+    }
   };
 
   const handleTicketDeleteClick = (ticket) => {
@@ -344,13 +826,13 @@ const RepairTicketsDashboard = () => {
     if (!ticketToDelete || !isAdmin) return;
 
     try {
-      await deleteTicket(ticketToDelete.id, isAdmin);
-      await loadTickets();
+      await deleteTicket(ticketToDelete.id, isAdmin, { ...ticketToDelete });
+      await Promise.all([loadTickets(), loadDeletedTickets()]);
       
       toast({
-        title: "Nalog Obrisan",
-        description: `Nalog #${ticketToDelete.id} je trajno uklonjen iz cloud baze.`,
-        className: "bg-red-600 text-white border-none"
+        title: "Nalog premješten u korpu",
+        description: `Nalog #${ticketToDelete.id} je u korpi. Možete ga vratiti iz taba Korpa.`,
+        className: "bg-amber-600 text-white border-none"
       });
       
       setIsDeleteDialogOpen(false);
@@ -365,39 +847,117 @@ const RepairTicketsDashboard = () => {
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
+  const handleRestoreTicket = async (ticket) => {
+    if (!isAdmin) return;
+    try {
+      await restoreTicket(ticket.id, isAdmin, ticket);
+      await Promise.all([loadTickets(), loadDeletedTickets()]);
+      toast({
+        title: 'Nalog vraćen',
+        description: `Nalog #${ticket.id} je ponovo aktivan.`,
+        className: 'bg-green-600 text-white border-none',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Greška',
+        description: error.message || 'Neuspešno vraćanje naloga.',
+      });
+    }
+  };
+
+  const handlePermanentDeleteClick = (ticket) => {
+    setTicketToPermanentDelete(ticket);
+    setIsPermanentDeleteDialogOpen(true);
+  };
+
+  const confirmPermanentDeleteTicket = async () => {
+    if (!ticketToPermanentDelete || !isAdmin) return;
+    try {
+      await permanentlyDeleteTicket(ticketToPermanentDelete.id, isAdmin, ticketToPermanentDelete);
+      await loadDeletedTickets();
+      toast({
+        title: 'Trajno obrisano',
+        description: `Nalog #${ticketToPermanentDelete.id} je zauvijek uklonjen.`,
+        className: 'bg-red-600 text-white border-none',
+      });
+      setIsPermanentDeleteDialogOpen(false);
+      setTicketToPermanentDelete(null);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Greška',
+        description: error.message || 'Neuspešno trajno brisanje.',
+      });
+    }
+  };
+
+  const clientTicketCounts = useMemo(() => getClientTicketCounts(regularTickets), [regularTickets]);
+
+  const availableBrands = useMemo(() => getUniqueBrands(regularTickets), [regularTickets]);
+
+  const filteredTickets = useMemo(() => regularTickets.filter(ticket => {
     if (!ticket) return false;
-    
-    const matchesSearch = 
-      (ticket.customerName && ticket.customerName.toLowerCase().includes(searchTerm.toLowerCase())) || 
-      (ticket.customerSurname && ticket.customerSurname.toLowerCase().includes(searchTerm.toLowerCase())) || 
-      (ticket.customerEmail && ticket.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())) || 
-      (ticket.deviceName && ticket.deviceName.toLowerCase().includes(searchTerm.toLowerCase())) || 
-      (ticket.deviceSerial && ticket.deviceSerial.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-    // Handle 'open' properly within filters if 'pending' is selected
+
+    const matchesSearch = ticketMatchesSearch(ticket, searchTerm);
+    const matchesBrandModel = ticketMatchesBrandModel(ticket, filterBrand, filterModel);
+
     const filterToCheck = filterStatus === 'pending' ? ['pending', 'open'] : [filterStatus];
     const matchesFilter = filterStatus === 'all' || filterToCheck.includes(ticket.status);
-    
+
     let matchesMonth = true;
-    if (filterMonth !== 'all') {
-       if (ticket.createdAt) {
-          const date = new Date(ticket.createdAt);
-          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          matchesMonth = key === filterMonth;
-       } else {
-          matchesMonth = false;
-       }
+    if (filterMonth !== 'all' && ticket.createdAt) {
+      const date = new Date(ticket.createdAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      matchesMonth = key === filterMonth;
+    } else if (filterMonth !== 'all') {
+      matchesMonth = false;
     }
 
-    return matchesSearch && matchesFilter && matchesMonth;
-  });
+    let matchesDay = true;
+    if (filterDay !== 'all' && ticket.createdAt) {
+      matchesDay = getDayKey(ticket.createdAt) === filterDay;
+    } else if (filterDay !== 'all') {
+      matchesDay = false;
+    }
+
+    return matchesSearch && matchesBrandModel && matchesFilter && matchesMonth && matchesDay;
+  }), [regularTickets, searchTerm, filterBrand, filterModel, filterStatus, filterMonth, filterDay]);
 
   const stats = {
-    total: tickets.length,
-    pending: tickets.filter(t => t?.status === 'pending' || t?.status === 'open').length,
-    inProgress: tickets.filter(t => t?.status === 'in-progress').length,
-    completed: tickets.filter(t => t?.status === 'completed').length
+    total: regularTickets.length,
+    pending: regularTickets.filter(t => t?.status === 'pending' || t?.status === 'open').length,
+    inProgress: regularTickets.filter(t => t?.status === 'in-progress').length,
+    completed: regularTickets.filter(t => t?.status === 'completed').length
+  };
+
+  const openAddRegularTicket = () => {
+    setAddTicketIsWarranty(false);
+    setIsAddDialogOpen(true);
+  };
+
+  const openAddWarrantyTicket = () => {
+    setAddTicketIsWarranty(true);
+    setIsAddDialogOpen(true);
+  };
+
+  const openAddVhsTicket = () => {
+    setIsAddVhsDialogOpen(true);
+  };
+
+  const handleNewServisniPrijem = () => {
+    setActiveTab('tickets');
+    openAddRegularTicket();
+  };
+
+  const handleNewGarantniRok = () => {
+    setActiveTab('warranty');
+    openAddWarrantyTicket();
+  };
+
+  const handleNewVhs = () => {
+    setActiveTab('vhs');
+    openAddVhsTicket();
   };
 
   return (
@@ -410,8 +970,9 @@ const RepairTicketsDashboard = () => {
             position: absolute; 
             top: 0; 
             left: 0; 
-            width: 100vw; 
-            min-height: 100vh;
+            width: 210mm;
+            height: 297mm;
+            overflow: hidden;
             z-index: 9999;
             background: white !important;
             color: black !important;
@@ -422,12 +983,17 @@ const RepairTicketsDashboard = () => {
       `}</style>
 
       {printableTicket && (
-        <div className="printable-content hidden">
+        <div className="printable-content hidden" data-print-type="intake">
           <PrintableTicket ticket={printableTicket} />
         </div>
       )}
-      {printableDeliveryNote && (
+      {printableVhsTicket && (
         <div className="printable-content hidden">
+          <PrintableVhsTicket ticket={printableVhsTicket} />
+        </div>
+      )}
+      {printableDeliveryNote && (
+        <div className="printable-content hidden" data-print-type="delivery">
           <PrintableDeliveryNote ticket={printableDeliveryNote} />
         </div>
       )}
@@ -435,12 +1001,24 @@ const RepairTicketsDashboard = () => {
       <div className='min-h-screen p-4 md:p-8 dashboard-container'>
         <div className='max-w-7xl mx-auto'>
           
-          <Tabs defaultValue="tickets" className="w-full">
-            <div className="flex justify-between items-center mb-6">
-              <TabsList className="bg-slate-800/80 border border-slate-700 p-1 h-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+              <TabsList className="bg-slate-800/80 border border-slate-700 p-1 h-auto w-fit">
                 <TabsTrigger value="tickets" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
                   <LayoutGrid className="w-4 h-4" />
                   Nalozi
+                </TabsTrigger>
+                <TabsTrigger value="clients" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
+                  <Users className="w-4 h-4" />
+                  Klijenti
+                </TabsTrigger>
+                <TabsTrigger value="warranty" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                  <Shield className="w-4 h-4" />
+                  Garantni Rok
+                </TabsTrigger>
+                <TabsTrigger value="vhs" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-amber-600 data-[state=active]:text-white">
+                  <Film className="w-4 h-4" />
+                  VHS Kasete
                 </TabsTrigger>
                 {isAdmin && (
                   <TabsTrigger value="finances" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white">
@@ -448,18 +1026,36 @@ const RepairTicketsDashboard = () => {
                     Finansije
                   </TabsTrigger>
                 )}
+                {isAdmin && (
+                  <TabsTrigger value="recycle" className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-red-600 data-[state=active]:text-white">
+                    <Trash2 className="w-4 h-4" />
+                    Korpa
+                    {deletedTickets.length > 0 && (
+                      <span className="ml-1 min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        {deletedTickets.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                )}
               </TabsList>
 
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={loadTickets}
-                className="text-slate-300 border-slate-600 hover:bg-slate-800"
-                disabled={isLoading}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Osveži Podatke
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <NewTicketMenu
+                  onServisniPrijem={handleNewServisniPrijem}
+                  onGarantniRok={handleNewGarantniRok}
+                  onVhs={handleNewVhs}
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={loadTickets}
+                  className="text-slate-300 border-slate-600 hover:bg-slate-800"
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Osveži Podatke
+                </Button>
+              </div>
             </div>
 
             <TabsContent value="tickets" className="space-y-8 mt-0">
@@ -477,42 +1073,104 @@ const RepairTicketsDashboard = () => {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className='bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 border border-slate-700'>
-                <div className='flex flex-col md:flex-row gap-4'>
-                  <div className='flex-1 relative'>
-                    <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5' />
-                    <input type='text' placeholder='Pretraga po imenu, emailu, uređaju...' value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className='w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all' />
+                <div className='flex flex-col gap-4'>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className='flex-1 relative min-w-0'>
+                      <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5' />
+                      <input type='text' placeholder='Pretraga: ime, telefon, brend, model, serijski broj...' value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className='w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all' />
+                    </div>
+                    <NewTicketMenu
+                      onServisniPrijem={handleNewServisniPrijem}
+                      onGarantniRok={handleNewGarantniRok}
+                      onVhs={handleNewVhs}
+                      className="w-full sm:w-auto px-5 py-3"
+                    />
                   </div>
 
-                  <div className='relative'>
-                    <CalendarDays className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none' />
-                    <select 
-                      value={filterMonth} 
-                      onChange={e => setFilterMonth(e.target.value)} 
-                      className='pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer min-w-[180px]'
-                    >
-                      <option value='all'>Svi Meseci</option>
-                      {availableMonths.map(month => (
-                        <option key={month} value={month}>
-                          {formatMonthDisplay(month)}
-                        </option>
-                      ))}
-                    </select>
+                  <div className='flex flex-wrap gap-3'>
+                    <div className='relative'>
+                      <Laptop className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none' />
+                      <select
+                        value={filterBrand}
+                        onChange={e => setFilterBrand(e.target.value)}
+                        className='pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all appearance-none cursor-pointer min-w-[150px] w-full lg:w-auto'
+                      >
+                        <option value=''>Svi brendovi</option>
+                        {availableBrands.map(brand => (
+                          <option key={brand} value={brand}>{brand}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className='relative min-w-[160px]'>
+                      <Cpu className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none' />
+                      <input
+                        type='text'
+                        placeholder='Model (npr. XPS 15)'
+                        value={filterModel}
+                        onChange={e => setFilterModel(e.target.value)}
+                        className='w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all'
+                      />
+                    </div>
+
+                    <div className='relative'>
+                      <CalendarDays className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none' />
+                      <select 
+                        value={filterMonth} 
+                        onChange={e => handleMonthChange(e.target.value)} 
+                        className='pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer min-w-[180px] w-full lg:w-auto'
+                      >
+                        <option value='all'>Svi Meseci</option>
+                        {availableMonths.map(month => (
+                          <option key={month} value={month}>
+                            {formatMonthDisplay(month)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className='relative'>
+                      <CalendarDays className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none' />
+                      <select
+                        value={filterDay}
+                        onChange={e => setFilterDay(e.target.value)}
+                        disabled={availableDays.length === 0}
+                        className='pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer min-w-[200px] w-full lg:w-auto disabled:opacity-50 disabled:cursor-not-allowed'
+                      >
+                        <option value='all'>Svi Dani</option>
+                        {availableDays.map(day => (
+                          <option key={day} value={day}>
+                            {formatDayKeyDisplay(day)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className='relative'>
+                      <Filter className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none' />
+                      <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className='pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer min-w-[160px] w-full lg:w-auto'>
+                        <option value='all'>Svi Statusi</option>
+                        <option value='pending'>Na Čekanju / Otvoreno</option>
+                        <option value='in-progress'>U Radu</option>
+                        <option value='completed'>Završeno</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className='relative'>
-                    <Filter className='absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none' />
-                    <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className='pl-10 pr-8 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer min-w-[160px]'>
-                      <option value='all'>Svi Statusi</option>
-                      <option value='pending'>Na Čekanju / Otvoreno</option>
-                      <option value='in-progress'>U Radu</option>
-                      <option value='completed'>Završeno</option>
-                    </select>
-                  </div>
+                  <p className="text-sm text-slate-400">
+                    Prikazano <span className="text-white font-semibold">{filteredTickets.length}</span> od {regularTickets.length} naloga
+                    {filteredTickets.length > 0 && (
+                      <span className="text-slate-500 ml-2">· prevucite kartice udesno za više naloga istog dana</span>
+                    )}
+                  </p>
 
-                  <Button onClick={() => setIsAddDialogOpen(true)} className='bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2'>
-                    <Plus className='w-5 h-5' />
-                    Novi Nalog
-                  </Button>
+                  {(searchTerm || filterBrand || filterModel || filterStatus !== 'all' || filterMonth !== 'all' || filterDay !== 'all') && (
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="text-slate-400 hover:text-white h-8">
+                        Obriši filtere
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
 
@@ -523,8 +1181,47 @@ const RepairTicketsDashboard = () => {
                 onAddNotes={addRepairNotes} 
                 onGenerateInvoice={openInvoiceDialog} 
                 onPrintTicket={handlePrintTicket}
+                onEditTicket={handleEditTicket}
                 onPrintDeliveryNote={handlePrintDeliveryNote}
                 onDeleteClick={handleTicketDeleteClick}
+                clientTicketCounts={clientTicketCounts}
+              />
+            </TabsContent>
+
+            <TabsContent value="warranty" className="mt-0">
+              <WarrantyTabContent
+                tickets={warrantyTickets}
+                onNewWarranty={openAddWarrantyTicket}
+                onTicketClick={handleOpenTicketDetails}
+                onUpdateStatus={updateTicketStatus}
+                onAddNotes={addRepairNotes}
+                onGenerateInvoice={openInvoiceDialog}
+                onPrintTicket={handlePrintTicket}
+                onEditTicket={handleEditTicket}
+                onPrintDeliveryNote={handlePrintDeliveryNote}
+                onDeleteClick={handleTicketDeleteClick}
+              />
+            </TabsContent>
+
+            <TabsContent value="vhs" className="mt-0">
+              <VhsTabContent
+                tickets={vhsTickets}
+                onNewVhs={openAddVhsTicket}
+                onTicketClick={handleOpenTicketDetails}
+                onUpdateStatus={updateTicketStatus}
+                onAddNotes={addRepairNotes}
+                onGenerateInvoice={openInvoiceDialog}
+                onPrintTicket={handlePrintTicket}
+                onEditTicket={handleEditTicket}
+                onPrintDeliveryNote={handlePrintDeliveryNote}
+                onDeleteClick={handleTicketDeleteClick}
+              />
+            </TabsContent>
+
+            <TabsContent value="clients" className="mt-0">
+              <CustomerHistoryPanel
+                tickets={tickets}
+                onTicketClick={handleOpenTicketDetails}
               />
             </TabsContent>
 
@@ -533,12 +1230,26 @@ const RepairTicketsDashboard = () => {
                 <FinanceDashboard tickets={tickets} />
               </TabsContent>
             )}
+
+            {isAdmin && (
+              <TabsContent value="recycle" className="mt-0">
+                <RecycleBinTabContent
+                  deletedTickets={deletedTickets}
+                  isLoading={isDeletedLoading}
+                  recycleBinMode={recycleBinMode}
+                  onRestore={handleRestoreTicket}
+                  onPermanentDelete={handlePermanentDeleteClick}
+                  onRefresh={loadDeletedTickets}
+                />
+              </TabsContent>
+            )}
           </Tabs>
 
           <AddTicketDialog 
             isOpen={isAddDialogOpen} 
-            onClose={() => setIsAddDialogOpen(false)} 
-            onSubmit={addTicket} 
+            onClose={() => { setIsAddDialogOpen(false); setAddTicketIsWarranty(false); }} 
+            onSubmit={addTicket}
+            isWarranty={addTicketIsWarranty}
           />
           
           <TicketSuccessDialog
@@ -547,6 +1258,38 @@ const RepairTicketsDashboard = () => {
             onPrint={handlePrintFromSuccessDialog}
           />
           
+          <AddVhsDialog
+            isOpen={isAddVhsDialogOpen}
+            onClose={() => setIsAddVhsDialogOpen(false)}
+            onSubmit={addVhsTicket}
+          />
+
+          <EditVhsReceiptDialog
+            isOpen={isVhsEditOpen}
+            onClose={() => {
+              setIsVhsEditOpen(false);
+              setIsNewVhsTicket(false);
+            }}
+            ticket={vhsEditTicket}
+            onSave={handleVhsSave}
+            onPrint={handleVhsPrint}
+            isNewTicket={isNewVhsTicket}
+          />
+
+          <EditPrijemniListDialog
+            isOpen={isPrijemniEditOpen}
+            onClose={() => {
+              setIsPrijemniEditOpen(false);
+              setIsNewPrijemniTicket(false);
+              setPrijemniStartPreview(false);
+            }}
+            ticket={prijemniEditTicket}
+            onSave={handlePrijemniSave}
+            onPrint={handlePrijemniPrint}
+            isNewTicket={isNewPrijemniTicket}
+            startWithPreview={prijemniStartPreview}
+          />
+
           <TicketDetailsDialog 
             isOpen={isDetailsDialogOpen} 
             onClose={() => setIsDetailsDialogOpen(false)} 
@@ -554,8 +1297,10 @@ const RepairTicketsDashboard = () => {
             onUpdateStatus={updateTicketStatus}
             onAddNotes={addRepairNotes}
             onPrintTicket={handlePrintTicket}
+            onEditTicket={handleEditTicket}
             onPrintDeliveryNote={handlePrintDeliveryNote}
             onDeleteClick={handleTicketDeleteClick}
+            onOpenTicket={(t) => setSelectedTicket(t)}
           />
 
           <InvoiceDialog isOpen={isInvoiceDialogOpen} onClose={() => setIsInvoiceDialogOpen(false)} ticket={selectedTicket} />
@@ -563,17 +1308,36 @@ const RepairTicketsDashboard = () => {
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent className="bg-slate-800 border-slate-700 text-white">
               <AlertDialogHeader>
-                <AlertDialogTitle className="text-red-400">Potvrda Brisanja</AlertDialogTitle>
+                <AlertDialogTitle className="text-amber-400">Premjesti u korpu?</AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-300">
-                  Da li ste sigurni da želite da obrišete nalog <span className="font-bold text-white">#{ticketToDelete?.id}</span> za klijenta <span className="font-bold text-white">{ticketToDelete?.customerName}</span>?
+                  Da li želite da obrišete nalog <span className="font-bold text-white">#{ticketToDelete?.id}</span> za klijenta <span className="font-bold text-white">{ticketToDelete?.customerName}</span>?
                   <br/><br/>
-                  <span className="text-red-400/80 text-xs">Ova radnja je nepovratna i trajno će ukloniti sve podatke o nalogu iz cloud baze.</span>
+                  Nalog ide u <span className="text-amber-300 font-semibold">Korpu za otpatke</span> i možete ga vratiti ako ste obrisali greškom.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">Otkaži</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDeleteTicket} className="bg-red-600 hover:bg-red-700 text-white">
-                  Obriši Trajno
+                <AlertDialogAction onClick={confirmDeleteTicket} className="bg-amber-600 hover:bg-amber-700 text-white">
+                  Premjesti u korpu
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={isPermanentDeleteDialogOpen} onOpenChange={setIsPermanentDeleteDialogOpen}>
+            <AlertDialogContent className="bg-slate-800 border-slate-700 text-white">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-red-400">Trajno brisanje</AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-300">
+                  Da li ste sigurni da želite <span className="font-bold text-red-300">trajno</span> obrisati nalog <span className="font-bold text-white">#{ticketToPermanentDelete?.id}</span>?
+                  <br/><br/>
+                  <span className="text-red-400/80 text-xs">Ova radnja je nepovratna — nalog se više ne može vratiti.</span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">Otkaži</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmPermanentDeleteTicket} className="bg-red-600 hover:bg-red-700 text-white">
+                  Obriši trajno
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

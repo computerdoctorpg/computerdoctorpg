@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Laptop, User, Phone, Hash, Lock, Database, ShoppingBag, AlertCircle, Battery, Loader2, MessageSquare } from 'lucide-react';
+import { Laptop, User, Phone, Hash, Lock, Database, ShoppingBag, AlertCircle, Battery, Loader2, MessageSquare, Shield, FileText, Calendar, Mail } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
-const AddTicketDialog = ({ isOpen, onClose, onSubmit }) => {
+const AddTicketDialog = ({ isOpen, onClose, onSubmit, isWarranty = false }) => {
   const [formData, setFormData] = useState({
     customerName: '',
     customerSurname: '',
     customerPhone: '',
+    customerEmail: '',
     deviceName: '',
     deviceSerial: '',
     chargerSerial: '',
@@ -19,7 +20,9 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit }) => {
     osPassword: '',
     keepData: false,
     hasBag: false,
-    bagDescription: ''
+    bagDescription: '',
+    warrantyUntil: '',
+    warrantyInvoice: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -79,6 +82,7 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit }) => {
           customerName: '',
           customerSurname: '',
           customerPhone: '',
+          customerEmail: '',
           deviceName: '',
           deviceSerial: '',
           chargerSerial: '',
@@ -89,7 +93,9 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit }) => {
           osPassword: '',
           keepData: false,
           hasBag: false,
-          bagDescription: ''
+          bagDescription: '',
+          warrantyUntil: '',
+          warrantyInvoice: '',
         });
         setErrors({});
       } catch (error) {
@@ -107,12 +113,58 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit }) => {
       <DialogContent className='bg-slate-800 border-slate-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle className='text-2xl font-bold text-white flex items-center gap-2'>
-            <Laptop className='w-6 h-6 text-blue-400' />
-            Novi Servisni Nalog
+            {isWarranty ? (
+              <>
+                <Shield className='w-6 h-6 text-emerald-400' />
+                Novi Garantni Nalog
+              </>
+            ) : (
+              <>
+                <Laptop className='w-6 h-6 text-blue-400' />
+                Novi Servisni Nalog
+              </>
+            )}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className='space-y-6 mt-4'>
+          {isWarranty && (
+            <div className='space-y-4 p-4 rounded-lg bg-emerald-900/20 border border-emerald-600/30'>
+              <h3 className='text-lg font-semibold text-emerald-400 flex items-center gap-2'>
+                <Shield className='w-5 h-5' />
+                Podaci o Garanciji
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div>
+                  <Label htmlFor='warrantyUntil' className='text-slate-300 flex items-center gap-1'>
+                    <Calendar className='w-4 h-4' /> Garancija do
+                  </Label>
+                  <input
+                    id='warrantyUntil'
+                    name='warrantyUntil'
+                    type='date'
+                    value={formData.warrantyUntil}
+                    onChange={handleChange}
+                    className='w-full mt-1 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
+                  />
+                </div>
+                <div>
+                  <Label htmlFor='warrantyInvoice' className='text-slate-300 flex items-center gap-1'>
+                    <FileText className='w-4 h-4' /> Broj računa / fakture
+                  </Label>
+                  <input
+                    id='warrantyInvoice'
+                    name='warrantyInvoice'
+                    type='text'
+                    value={formData.warrantyInvoice}
+                    onChange={handleChange}
+                    placeholder='npr. RA-123/2025'
+                    className='w-full mt-1 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500'
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           {/* Customer Information */}
           <div className='space-y-4'>
             <h3 className='text-lg font-semibold text-blue-400 flex items-center gap-2'>
@@ -175,6 +227,22 @@ const AddTicketDialog = ({ isOpen, onClose, onSubmit }) => {
                 {errors.customerPhone && (
                   <p className='text-red-400 text-sm mt-1'>{errors.customerPhone}</p>
                 )}
+              </div>
+              <div>
+                <Label htmlFor='customerEmail' className='text-slate-300 flex items-center gap-2'>
+                  <Mail className='w-4 h-4' />
+                  Email klijenta
+                </Label>
+                <input
+                  id='customerEmail'
+                  name='customerEmail'
+                  type='email'
+                  value={formData.customerEmail}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className='w-full mt-1 px-4 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all'
+                  placeholder='klijent@email.com (opciono)'
+                />
               </div>
             </div>
           </div>
