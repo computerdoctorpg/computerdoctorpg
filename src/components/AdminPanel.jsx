@@ -188,7 +188,7 @@ const AdminPanel = () => {
           </TabsTrigger>
           <TabsTrigger value="finances" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2 text-slate-300">
             <BarChart3 className="w-4 h-4" />
-            Finansije Dijelova
+            Finansije Delova
           </TabsTrigger>
           <TabsTrigger value="backup" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white flex items-center gap-2 text-slate-300">
             <HardDrive className="w-4 h-4" />

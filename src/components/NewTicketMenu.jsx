@@ -62,7 +62,7 @@ const NewTicketMenu = ({
       >
         <Film className="w-4 h-4 text-amber-400 shrink-0" />
         <div>
-          <p className="font-semibold">VHS kasete</p>
+          <p className="font-semibold">Snimci</p>
           <p className="text-xs text-slate-400">Digitalizacija · 30 €/kaseta</p>
         </div>
       </DropdownMenuItem>

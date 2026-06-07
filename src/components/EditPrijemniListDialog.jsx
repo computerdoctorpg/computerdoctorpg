@@ -173,8 +173,8 @@ const EditPrijemniListDialog = ({
           </DialogTitle>
           <p className="text-sm text-slate-400">
             {isNewTicket
-              ? 'Provjerite podatke prije štampe. Izmjene se čuvaju u bazi.'
-              : 'Izmijenite podatke naloga — klijent, uređaj, kvar, napomene. Sačuvajte promjene u bazi.'}
+              ? 'Proverite podatke pre štampe. Izmene se čuvaju u bazi.'
+              : 'Izmenite podatke naloga — klijent, uređaj, kvar, napomene. Sačuvajte promene u bazi.'}
           </p>
         </DialogHeader>
 
@@ -377,7 +377,7 @@ const EditPrijemniListDialog = ({
             className="bg-green-600 hover:bg-green-700"
           >
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Sačuvaj izmjene
+            Sačuvaj izmene
           </Button>
           <Button
             type="button"

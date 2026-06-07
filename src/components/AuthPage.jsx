@@ -19,7 +19,7 @@ const getLoginErrorMessage = (error) => {
   }
 
   if (message === 'Email not confirmed' || code === 'email_not_confirmed') {
-    return 'Email nije potvrđen. Provjeri inbox ili resetuj lozinku u Supabase panelu.';
+    return 'Email nije potvrđen. Proveri inbox ili resetuj lozinku u Supabase panelu.';
   }
 
   if (code === 'too_many_requests') {

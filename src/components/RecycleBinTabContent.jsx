@@ -15,7 +15,7 @@ const formatDate = (dateString) => {
 };
 
 const getTicketType = (ticket) => {
-  if (ticket.isVhs) return { label: 'VHS', className: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+  if (ticket.isVhs) return { label: 'Snimci', className: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
   if (ticket.isWarranty) return { label: 'Garancija', className: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
   return { label: 'Servis', className: 'bg-blue-500/20 text-blue-300 border-blue-500/40' };
 };

@@ -295,7 +295,7 @@ const RepairTicketsDashboard = () => {
       
       toast({
         title: "Uspešno",
-        description: `Nalog ${newTicket.ticket_number} kreiran. Uredite prijemni list prije štampe.`,
+        description: `Nalog ${newTicket.ticket_number} kreiran. Uredite prijemni list pre štampe.`,
         className: "bg-green-600 text-white border-none"
       });
     } catch (error) {
@@ -328,17 +328,17 @@ const RepairTicketsDashboard = () => {
 
       const history = [{
         date: new Date().toISOString(),
-        action: 'VHS prijem kreiran',
-        description: `Prijem ${count} VHS kaseta (Operater: ${user.email})`,
+        action: 'Prijem snimaka kreiran',
+        description: `Prijem ${count} kaseta snimaka (Operater: ${user.email})`,
       }];
 
       const fullTicketData = {
         customerName: formData.customerName,
         customerSurname: formData.customerSurname,
         customerPhone: formData.customerPhone,
-        deviceName: `VHS digitalizacija (${count} kaseta)`,
+        deviceName: `Digitalizacija snimaka (${count} kaseta)`,
         deviceSerial: '-',
-        issueDescription: 'Digitalizacija VHS kaseta u MP4 format na USB',
+        issueDescription: 'Digitalizacija snimaka u MP4 format na USB',
         notes: formData.notes || '',
         isVhs: true,
         vhsCassetteCount: count,
@@ -367,7 +367,7 @@ const RepairTicketsDashboard = () => {
 
       toast({
         title: 'Uspešno',
-        description: `VHS prijem ${newTicket.ticket_number} kreiran. Uredite prijemnici prije štampe.`,
+        description: `Prijem snimaka ${newTicket.ticket_number} kreiran. Uredite prijemnici pre štampe.`,
         className: 'bg-amber-600 text-white border-none',
       });
     } catch (error) {
@@ -375,7 +375,7 @@ const RepairTicketsDashboard = () => {
       toast({
         variant: 'destructive',
         title: 'Greška',
-        description: error.message || 'Neuspešno kreiranje VHS prijema.',
+        description: error.message || 'Neuspešno kreiranje prijema snimaka.',
       });
       throw error;
     }
@@ -539,7 +539,7 @@ const RepairTicketsDashboard = () => {
     const historyEntry = {
       date: new Date().toISOString(),
       action: 'Podaci naloga ažurirani',
-      description: 'Izmijenjeni podaci klijenta, uređaja ili prijemnog lista',
+      description: 'Izmenjeni podaci klijenta, uređaja ili prijemnog lista',
     };
     const newHistory = [...(currentTicket.history || []), historyEntry];
 
@@ -594,8 +594,8 @@ const RepairTicketsDashboard = () => {
 
     const historyEntry = {
       date: new Date().toISOString(),
-      action: 'VHS prijem ažuriran',
-      description: 'Izmijenjeni podaci klijenta ili kaseta',
+      action: 'Prijem snimaka ažuriran',
+      description: 'Izmenjeni podaci klijenta ili kaseta',
     };
     const newHistory = [...(currentTicket.history || []), historyEntry];
 
@@ -607,7 +607,7 @@ const RepairTicketsDashboard = () => {
 
     await updateTicket(editedTicket.id, {
       clientId: client.id,
-      deviceName: `VHS digitalizacija (${count} kaseta)`,
+      deviceName: `Digitalizacija snimaka (${count} kaseta)`,
       notes: editedTicket.notes ?? '',
       vhsCassetteCount: count,
       vhsCassetteCondition: editedTicket.vhsCassetteCondition || '',
@@ -641,7 +641,7 @@ const RepairTicketsDashboard = () => {
       const saved = await saveVhsChanges(editedTicket);
       setVhsEditTicket(saved);
       setIsNewVhsTicket(false);
-      toast({ title: 'Sačuvano', description: 'VHS prijem ažuriran.', className: 'bg-green-600 text-white border-none' });
+      toast({ title: 'Sačuvano', description: 'Prijem snimaka ažuriran.', className: 'bg-green-600 text-white border-none' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje.' });
       throw error;
@@ -657,7 +657,7 @@ const RepairTicketsDashboard = () => {
       setIsNewVhsTicket(false);
       setPrintableVhsTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje prije štampe.' });
+      toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje pre štampe.' });
       throw error;
     }
   };
@@ -719,7 +719,7 @@ const RepairTicketsDashboard = () => {
       toast({
         variant: 'destructive',
         title: 'Greška',
-        description: error.message || 'Neuspešno čuvanje prije štampe.',
+        description: error.message || 'Neuspešno čuvanje pre štampe.',
       });
       throw error;
     }
@@ -1009,7 +1009,7 @@ const RepairTicketsDashboard = () => {
                 </TabsTrigger>
                 <TabsTrigger value="vhs" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-amber-600 data-[state=active]:text-white">
                   <Film className="w-4 h-4 shrink-0" />
-                  VHS
+                  Snimci
                 </TabsTrigger>
                 {isAdmin && (
                   <TabsTrigger value="finances" className="flex items-center gap-1.5 px-3 md:px-4 py-2 text-xs md:text-sm whitespace-nowrap data-[state=active]:bg-blue-600 data-[state=active]:text-white">

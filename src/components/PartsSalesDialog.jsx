@@ -61,7 +61,7 @@ const PartsSalesDialog = ({ part, isOpen, onClose, onSuccess }) => {
 
       toast({
         title: "Uspješno prodato",
-        description: `Dio ${part.name} je uspješno evidentiran kao prodat.`,
+        description: `Deo ${part.name} je uspešno evidentiran kao prodat.`,
         className: "bg-green-600 text-white border-none"
       });
       
@@ -85,7 +85,7 @@ const PartsSalesDialog = ({ part, isOpen, onClose, onSuccess }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <ShoppingCart className="w-5 h-5 text-blue-400" />
-            Prodaja Dijela
+            Prodaja dela
           </DialogTitle>
           <DialogDescription className="text-slate-400">
             Unesite podatke o kupcu za dio: <strong className="text-white">{part.name}</strong>
@@ -102,7 +102,7 @@ const PartsSalesDialog = ({ part, isOpen, onClose, onSuccess }) => {
             <span className="text-white font-mono">{part.part_number}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Cijena:</span>
+            <span className="text-slate-400">Cena:</span>
             <span className="text-green-400 font-bold">€{part.price || '0.00'}</span>
           </div>
         </div>

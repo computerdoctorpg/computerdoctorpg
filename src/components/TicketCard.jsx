@@ -79,7 +79,7 @@ const TicketCard = ({
     toast({
       title: 'Viber',
       description: result.copied
-        ? 'Poruka kopirana. Zalijepite je u Viber (Ctrl+V).'
+        ? 'Poruka kopirana. Nalepite je u Viber (Ctrl+V).'
         : 'Viber se otvara — kopirajte poruku ručno ako je polje prazno.',
       duration: 5000,
     });
@@ -142,7 +142,7 @@ const TicketCard = ({
           {ticket.isVhs && (
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold border bg-amber-500/20 text-amber-300 border-amber-500/40">
               <Film className="w-3 h-3" />
-              VHS
+              Snimci
             </span>
           )}
         </div>

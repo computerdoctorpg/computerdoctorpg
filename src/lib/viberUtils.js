@@ -27,7 +27,7 @@ export const buildCompletionViberMessage = (ticket, overrides = {}) => {
 
   return `Poštovani,
 
-🔧 Vaš uređaj je uspješno završen i spreman za preuzimanje.
+🔧 Vaš uređaj je uspešno završen i spreman za preuzimanje.
 
 🕘 Preuzimanje: svakim radnim danom od 09:00 do 17:00h
 
@@ -35,7 +35,7 @@ export const buildCompletionViberMessage = (ticket, overrides = {}) => {
 
 💵 Plaćanje karticom nije moguće
 
-💰 Cijena ukupnog servisa iznosi: €${priceSuffix}
+💰 Cena ukupnog servisa iznosi: €${priceSuffix}
 
 Hvala na povjerenju.   
 

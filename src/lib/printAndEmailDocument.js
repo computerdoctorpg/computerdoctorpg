@@ -69,7 +69,7 @@ export async function runPrintAndEmailJob({
       toastRef?.current?.({
         variant: 'destructive',
         title: 'Email nije poslat',
-        description: error.message || 'Provjerite SMTP podešavanja na serveru.',
+        description: error.message || 'Proverite SMTP podešavanja na serveru.',
       });
     }
   }

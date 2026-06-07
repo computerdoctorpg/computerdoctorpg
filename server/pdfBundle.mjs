@@ -12,11 +12,11 @@ import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/render
 // src/lib/printTranslations.js
 var SERVICE_TERMS_SR = [
   "1. Servis ne obavje\u0161tava korisnika o servisnim uslugama na ure\u0111aju koje su do 10\u20AC.",
-  "2. Servis je obavezan da prije po\u010Detka servisiranja i po zavr\u0161enom servisu uredno obavijesti korisnika SMS porukom, e-mailom ili telefonskim pozivom.",
-  "3. Servis je du\u017Ean da u roku od 48h (isklju\u010Duju\u0107i vikend) konstatuje kvar na ure\u0111aju i obavijesti korisnika.",
+  "2. Servis je obavezan da pre po\u010Detka servisiranja i po zavr\u0161enom servisu uredno obavesti korisnika SMS porukom, e-mailom ili telefonskim pozivom.",
+  "3. Servis je du\u017Ean da u roku od 48h (isklju\u010Duju\u0107i vikend) konstatuje kvar na ure\u0111aju i obavesti korisnika.",
   "4. Dijagnostika ure\u0111aja se napla\u0107uje 30\u20AC samo u slu\u010Daju da korisnik NE \u017Eeli da odobri popravku nakon utvr\u0111ivanja kvara. Ukoliko korisnik odobri popravku, dijagnostika se ne napla\u0107uje.",
-  "5. Korisnik je du\u017Ean da izmiri tro\u0161kove servisiranja prije preuzimanja ure\u0111aja.",
-  "6. SERVIS NE ODGOVARA ZA PODATKE NA URE\u0110AJU. KORISNIK JE OBAVEZAN DA URADI REZERVNU KOPIJU (BACKUP) PRIJE DONO\u0160ENJA URE\u0110AJA NA SERVIS.",
+  "5. Korisnik je du\u017Ean da izmiri tro\u0161kove servisiranja pre preuzimanja ure\u0111aja.",
+  "6. SERVIS NE ODGOVARA ZA PODATKE NA URE\u0110AJU. KORISNIK JE OBAVEZAN DA URADI REZERVNU KOPIJU (BACKUP) PRE DONO\u0160ENJA URE\u0110AJA NA SERVIS.",
   "7. Korisnik je du\u017Ean da preuzme ure\u0111aj u roku od 15 dana. Nakon isteka roka ure\u0111aj ostaje u servisu do daljnjeg, ali servis ne snosi odgovornost za eventualnu \u0161tetu ili gubitak.",
   "8. Dopunjavanjem kertrid\u017Ea gubi se garancija na \u0161tampa\u010D.",
   "9. Ure\u0111aj se preuzima isklju\u010Divo uz servisnu prijemnicu.",
@@ -48,7 +48,7 @@ var VHS_TERMS_SR = [
   "3. Originalne VHS kasete vra\u0107aju se klijentu po preuzimanju USB-a.",
   "4. Klijent je du\u017Ean preuzeti materijal u roku od 15 dana od obavje\u0161tenja.",
   "5. Ure\u0111aj/kasete se preuzimaju isklju\u010Divo uz ovaj prijemni list.",
-  "6. Computer Doctor ne odgovara za kasete o\u0161te\u0107ene prije prijema ili usljed lo\u0161eg stanja magnetne trake."
+  "6. Computer Doctor ne odgovara za kasete o\u0161te\u0107ene pre prijema ili usled lo\u0161eg stanja magnetne trake."
 ];
 var VHS_TERMS_EN = [
   "1. Digitization time depends on the number of cassettes and recording condition.",
@@ -94,15 +94,15 @@ var PRINT_I18N = {
     clientAgrees: "Saglasan/na sa uslovima servisa",
     none: "NEMA",
     dateLocale: "sr-RS",
-    vhsTagline: "Digitalizacija VHS kaseta \xB7 Podgorica",
-    vhsTitle: "Prijem VHS Kaseta",
-    vhsSubtitle: "Digitalizacija u MP4 format \xB7 USB uklju\u010Den u cijenu",
-    usbNotice: "U cijenu je uklju\u010Den USB na koji se skladi\u0161te podaci u MP4 formatu",
+    vhsTagline: "Digitalizacija snimaka \xB7 Podgorica",
+    vhsTitle: "Prijem Snimaka",
+    vhsSubtitle: "Digitalizacija u MP4 format \xB7 USB uklju\u010Den u cenu",
+    usbNotice: "U cenu je uklju\u010Den USB na koji se skladi\u0161te podaci u MP4 formatu",
     cassetteSection: "Podaci o kasetama",
     cassetteCount: "Broj kaseta",
-    pricePerCassette: "Cijena po kaseti",
+    pricePerCassette: "Cena po kaseti",
     cassetteCondition: "Stanje kaseta",
-    totalPrice: "Ukupna cijena",
+    totalPrice: "Ukupna cena",
     vhsTerms: VHS_TERMS_SR,
     vhsBoldTerms: [5],
     clientAgreesShort: "Saglasan/na sa uslovima"

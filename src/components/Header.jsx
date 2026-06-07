@@ -43,13 +43,13 @@ const Header = () => {
 
   const navLinks = [
     { to: '/', label: 'Nalozi', icon: Laptop, active: location.pathname === '/', className: 'bg-blue-600 hover:bg-blue-700' },
-    { to: '/parts', label: 'Polovni dijelovi', icon: Package, active: location.pathname === '/parts', className: 'bg-blue-600 hover:bg-blue-700' },
+    { to: '/parts', label: 'Polovni delovi', icon: Package, active: location.pathname === '/parts', className: 'bg-blue-600 hover:bg-blue-700' },
   ];
 
   if (isAdmin) {
     navLinks.push(
       { to: '/admin', label: 'Admin Panel', icon: ShieldAlert, active: location.pathname === '/admin' && !location.search.includes('tab=finances'), className: 'bg-purple-600 hover:bg-purple-700' },
-      { to: '/admin?tab=finances', label: 'Finansije dijelova', icon: BarChart3, active: location.pathname === '/admin' && location.search.includes('tab=finances'), className: 'bg-green-600 hover:bg-green-700' },
+      { to: '/admin?tab=finances', label: 'Finansije delova', icon: BarChart3, active: location.pathname === '/admin' && location.search.includes('tab=finances'), className: 'bg-green-600 hover:bg-green-700' },
     );
   }
 

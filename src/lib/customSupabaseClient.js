@@ -31,7 +31,7 @@ const clientProxy = new Proxy(
       const client = getSupabaseClient();
       if (!client) {
         if (prop === 'then') return undefined;
-        throw new Error('Supabase nije podešen. Provjerite env varijable na Hostingeru.');
+        throw new Error('Supabase nije podešen. Proverite env varijable na Hostingeru.');
       }
       const value = client[prop];
       return typeof value === 'function' ? value.bind(client) : value;

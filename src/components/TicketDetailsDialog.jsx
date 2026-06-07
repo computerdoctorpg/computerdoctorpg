@@ -200,7 +200,7 @@ const TicketDetailsDialog = ({
     toast({
       title: 'Viber',
       description: result.copied
-        ? 'Poruka kopirana. Zalijepite je u Viber (Ctrl+V).'
+        ? 'Poruka kopirana. Nalepite je u Viber (Ctrl+V).'
         : 'Viber se otvara — kopirajte poruku ručno ako je polje prazno.',
       duration: 5000,
     });

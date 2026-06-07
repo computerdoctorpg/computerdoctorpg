@@ -106,10 +106,10 @@ const PartsManagement = () => {
     try {
       if (partForm.id) {
         await updatePart(partForm.id, partForm.category_id, partForm.name, partForm.manufacturer, partForm.part_number, partForm.description, partForm.price);
-        toast({ title: 'Uspešno', description: 'Dio uspješno ažuriran.' });
+        toast({ title: 'Uspešno', description: 'Deo uspešno ažuriran.' });
       } else {
         await createPart(partForm.category_id, partForm.name, partForm.manufacturer, partForm.part_number, partForm.description, partForm.price);
-        toast({ title: 'Uspešno', description: 'Dio uspješno dodat.' });
+        toast({ title: 'Uspešno', description: 'Deo uspešno dodat.' });
       }
       setPartModalOpen(false);
       loadData();
@@ -127,10 +127,10 @@ const PartsManagement = () => {
     try {
       if (categoryForm.id) {
         await updatePartCategory(categoryForm.id, categoryForm.name, categoryForm.description);
-        toast({ title: 'Uspešno', description: 'Kategorija uspješno ažurirana.' });
+        toast({ title: 'Uspešno', description: 'Kategorija uspešno ažurirana.' });
       } else {
         await createPartCategory(categoryForm.name, categoryForm.description);
-        toast({ title: 'Uspešno', description: 'Kategorija uspješno dodata.' });
+        toast({ title: 'Uspešno', description: 'Kategorija uspešno dodata.' });
       }
       setCategoryModalOpen(false);
       loadData();
@@ -144,14 +144,14 @@ const PartsManagement = () => {
     try {
       if (deleteItem.type === 'part') {
         await deletePart(deleteItem.id);
-        toast({ title: 'Obrisano', description: 'Dio je uspješno obrisan.' });
+        toast({ title: 'Obrisano', description: 'Deo je uspešno obrisan.' });
       } else {
         await deletePartCategory(deleteItem.id);
-        toast({ title: 'Obrisano', description: 'Kategorija je uspješno obrisana.' });
+        toast({ title: 'Obrisano', description: 'Kategorija je uspešno obrisana.' });
       }
       loadData();
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Greška', description: 'Neuspješno brisanje.' });
+      toast({ variant: 'destructive', title: 'Greška', description: 'Neuspešno brisanje.' });
     } finally {
       setDeleteAlertOpen(false);
       setDeleteItem(null);
@@ -162,15 +162,15 @@ const PartsManagement = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-white">Upravljanje Dijelovima</h2>
-          <p className="text-slate-400">Dodavanje i izmjena polovnih dijelova i kategorija. Kliknite na red za evidenciju prodaje.</p>
+          <h2 className="text-2xl font-bold text-white">Upravljanje Delovima</h2>
+          <p className="text-slate-400">Dodavanje i izmena polovnih delova i kategorija. Kliknite na red za evidenciju prodaje.</p>
         </div>
       </div>
 
       <Tabs defaultValue="parts" className="w-full">
         <TabsList className="bg-slate-800/80 border border-slate-700 mb-6">
           <TabsTrigger value="parts" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
-            <Package className="w-4 h-4 mr-2" /> Dijelovi
+            <Package className="w-4 h-4 mr-2" /> Delovi
           </TabsTrigger>
           <TabsTrigger value="categories" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
             <Tags className="w-4 h-4 mr-2" /> Kategorije
@@ -199,7 +199,7 @@ const PartsManagement = () => {
                       <th className="px-4 py-3">Brend</th>
                       <th className="px-4 py-3">Part Number</th>
                       <th className="px-4 py-3">Kategorija</th>
-                      <th className="px-4 py-3">Cijena</th>
+                      <th className="px-4 py-3">Cena</th>
                       <th className="px-4 py-3 text-right">Akcije</th>
                     </tr>
                   </thead>
@@ -226,7 +226,7 @@ const PartsManagement = () => {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan="6" className="text-center py-6 text-slate-500">Nema pronađenih dijelova.</td></tr>
+                      <tr><td colSpan="6" className="text-center py-6 text-slate-500">Nema pronađenih delova.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -284,11 +284,11 @@ const PartsManagement = () => {
       <Dialog open={partModalOpen} onOpenChange={setPartModalOpen}>
         <DialogContent className="bg-slate-800 border-slate-700 text-white sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{partForm.id ? 'Izmjena Dijela' : 'Novi Dio'}</DialogTitle>
+            <DialogTitle>{partForm.id ? 'Izmena dela' : 'Novi deo'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSavePart} className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Naziv Dijela *</Label>
+              <Label>Naziv dela *</Label>
               <Input required value={partForm.name} onChange={e => setPartForm({...partForm, name: e.target.value})} className="bg-slate-900 border-slate-600" />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -310,7 +310,7 @@ const PartsManagement = () => {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Cijena (€)</Label>
+                <Label>Cena (€)</Label>
                 <Input type="number" step="0.01" value={partForm.price} onChange={e => setPartForm({...partForm, price: e.target.value})} className="bg-slate-900 border-slate-600" />
               </div>
             </div>

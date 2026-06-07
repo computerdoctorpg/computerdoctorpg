@@ -65,14 +65,14 @@ const AddVhsDialog = ({ isOpen, onClose, onSubmit }) => {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <Film className="w-6 h-6 text-amber-400" />
-            Prijem VHS Kaseta
+            Prijem Snimaka
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-2">
           <div className="p-3 rounded-lg bg-blue-900/25 border border-blue-600/30 text-sm text-blue-200">
-            Cijena po kaseti: <strong className="text-white">{VHS_PRICE_PER_CASSETTE} €</strong>
-            {' '}— u cijenu je uključen USB sa snimkama u <strong className="text-white">MP4</strong> formatu.
+            Cena po kaseti: <strong className="text-white">{VHS_PRICE_PER_CASSETTE} €</strong>
+            {' '}— u cenu je uključen USB sa snimcima u <strong className="text-white">MP4</strong> formatu.
           </div>
 
           <div className="space-y-3">

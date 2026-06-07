@@ -371,7 +371,7 @@ export const updateTicket = async (ticketNumber, updates) => {
     }
 
     if (error) throw error;
-    if (!data) throw new Error('Nalog nije pronađen ili nema dozvolu za izmjenu.');
+    if (!data) throw new Error('Nalog nije pronađen ili nema dozvolu za izmenu.');
     return data;
   } catch (error) {
     console.error('Error updating ticket:', error);

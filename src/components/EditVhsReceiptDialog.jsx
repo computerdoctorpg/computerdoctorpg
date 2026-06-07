@@ -35,7 +35,7 @@ const EditVhsReceiptDialog = ({ isOpen, onClose, ticket, onSave, onPrint, isNewT
     vhsPricePerCassette: VHS_PRICE_PER_CASSETTE,
     estimatedCost: totalPrice,
     serviceCost: totalPrice,
-    deviceName: `VHS digitalizacija (${count} kaseta)`,
+    deviceName: `Digitalizacija snimaka (${count} kaseta)`,
   });
 
   useEffect(() => {
@@ -112,10 +112,10 @@ const EditVhsReceiptDialog = ({ isOpen, onClose, ticket, onSave, onPrint, isNewT
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <FileText className="w-5 h-5 text-amber-400" />
-            Prijem VHS Kaseta {ticket.id ? `#${ticket.id}` : ''}
+            Prijem Snimaka {ticket.id ? `#${ticket.id}` : ''}
           </DialogTitle>
           <p className="text-sm text-slate-400">
-            {isNewTicket ? 'Provjerite podatke prije štampe.' : 'Izmijenite podatke i sačuvajte u bazi.'}
+            {isNewTicket ? 'Proverite podatke pre štampe.' : 'Izmenite podatke i sačuvajte u bazi.'}
           </p>
         </DialogHeader>
 
@@ -177,7 +177,7 @@ const EditVhsReceiptDialog = ({ isOpen, onClose, ticket, onSave, onPrint, isNewT
                   <textarea name="notes" value={formData.notes} onChange={handleChange} rows={2} className={`${inputClass} resize-y`} />
                 </div>
                 <p className="text-sm text-slate-400 pt-1 border-t border-amber-700/40">
-                  Cijena: <span className="text-amber-300 font-bold">{VHS_PRICE_PER_CASSETTE} €/kaseta</span>
+                  Cena: <span className="text-amber-300 font-bold">{VHS_PRICE_PER_CASSETTE} €/kaseta</span>
                   {' · '}Ukupno: <span className="text-white font-bold">{totalPrice} €</span>
                   {' · '}USB + MP4 uključeni
                 </p>

@@ -40,7 +40,7 @@ const PartsPage = () => {
       toast({ 
         variant: 'destructive', 
         title: 'Greška', 
-        description: 'Neuspešno učitavanje podataka o dijelovima.' 
+        description: 'Neuspešno učitavanje podataka o delovima.' 
       });
     } finally {
       setIsLoading(false);
@@ -95,9 +95,9 @@ const PartsPage = () => {
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
               <Package className="w-6 h-6 text-blue-500" />
-              Polovni Dijelovi
+              Polovni Delovi
             </h2>
-            <p className="text-slate-400">Pregled dostupnih polovnih dijelova i komponenti. Kliknite na red za prodaju.</p>
+            <p className="text-slate-400">Pregled dostupnih polovnih delova i komponenti. Kliknite na red za prodaju.</p>
           </div>
         </div>
 
@@ -124,7 +124,7 @@ const PartsPage = () => {
                     <th className="px-4 py-3">Part Number</th>
                     <th className="px-4 py-3">Kategorija</th>
                     <th className="px-4 py-3">Opis</th>
-                    <th className="px-4 py-3">Cijena</th>
+                    <th className="px-4 py-3">Cena</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -153,7 +153,7 @@ const PartsPage = () => {
                   )) : (
                     <tr>
                       <td colSpan="6" className="text-center py-6 text-slate-500">
-                        Nema pronađenih dijelova za zadati kriterijum.
+                        Nema pronađenih delova za zadati kriterijum.
                       </td>
                     </tr>
                   )}

@@ -96,7 +96,7 @@ const PartsSalesFinancialPage = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
-                placeholder="Pretraga po kupcu, telefonu ili dijelu..."
+                placeholder="Pretraga po kupcu, telefonu ili delu..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 bg-slate-950 border-slate-600 text-white placeholder:text-slate-500"
@@ -121,7 +121,7 @@ const PartsSalesFinancialPage = () => {
                   <th className="px-4 py-3 font-semibold">Dio (Brend)</th>
                   <th className="px-4 py-3 font-semibold">Kupac</th>
                   <th className="px-4 py-3 font-semibold">Telefon</th>
-                  <th className="px-4 py-3 text-right font-semibold">Cijena</th>
+                  <th className="px-4 py-3 text-right font-semibold">Cena</th>
                 </tr>
               </thead>
               <tbody className="bg-slate-900/40">

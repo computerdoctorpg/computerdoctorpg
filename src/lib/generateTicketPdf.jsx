@@ -66,7 +66,7 @@ export function blobToBase64(blob) {
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64 = reader.result?.split(',')[1];
-      if (!base64) reject(new Error('Neuspješno kodiranje PDF-a.'));
+      if (!base64) reject(new Error('Neuspešno kodiranje PDF-a.'));
       else resolve(base64);
     };
     reader.onerror = reject;

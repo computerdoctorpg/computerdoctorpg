@@ -21,21 +21,21 @@ const PartsSalesStatistics = ({ sales }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <StatCard
-        title="Ukupan Prihod (Dijelovi)"
+        title="Ukupan Prihod (Delovi)"
         value={`€${totalRevenue.toFixed(2)}`}
         icon={Euro}
         iconClass="bg-green-500/20 text-green-400"
         valueClass="text-green-400"
       />
       <StatCard
-        title="Prodato Dijelova"
+        title="Prodato delova"
         value={`${totalSold} kom`}
         icon={ShoppingBag}
         iconClass="bg-blue-500/20 text-blue-400"
         valueClass="text-blue-300"
       />
       <StatCard
-        title="Prosječna Cijena"
+        title="Prosečna Cena"
         value={`€${avgPrice.toFixed(2)}`}
         icon={TrendingUp}
         iconClass="bg-purple-500/20 text-purple-400"

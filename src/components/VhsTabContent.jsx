@@ -91,7 +91,7 @@ const VhsTabContent = ({
     <div className="space-y-8 mt-0">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'VHS Prijemi', value: stats.total, color: 'from-amber-500 to-amber-600' },
+          { label: 'Snimci — prijemi', value: stats.total, color: 'from-amber-500 to-amber-600' },
           { label: 'Na Čekanju', value: stats.pending, color: 'from-yellow-500 to-yellow-600' },
           { label: 'U Radu', value: stats.inProgress, color: 'from-purple-500 to-purple-600' },
           { label: 'Završeno', value: stats.completed, color: 'from-green-500 to-green-600' },
@@ -107,7 +107,7 @@ const VhsTabContent = ({
         <div className="flex items-center gap-2 mb-4 text-amber-300 text-sm">
           <Film className="w-5 h-5 shrink-0" />
           <p>
-            Digitalizacija VHS kaseta — <strong className="text-white">30 € po kaseti</strong>, USB sa MP4 snimkama uključen u cijenu.
+            Digitalizacija snimaka — <strong className="text-white">30 € po kaseti</strong>, USB sa MP4 snimcima uključen u cenu.
           </p>
         </div>
 
@@ -126,7 +126,7 @@ const VhsTabContent = ({
             <Button onClick={onNewVhs}
               className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-5 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shrink-0 whitespace-nowrap w-full sm:w-auto">
               <Plus className="w-5 h-5 shrink-0" />
-              Novi VHS Prijem
+              Novi prijem snimaka
             </Button>
           </div>
 
@@ -160,7 +160,7 @@ const VhsTabContent = ({
           </div>
 
           <p className="text-sm text-slate-400">
-            Prikazano <span className="text-white font-semibold">{filteredTickets.length}</span> od {tickets.length} VHS prijema
+            Prikazano <span className="text-white font-semibold">{filteredTickets.length}</span> od {tickets.length} prijema snimaka
           </p>
 
           {(searchTerm || filterStatus !== 'all' || filterMonth !== 'all' || filterDay !== 'all') && (

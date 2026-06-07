@@ -10,12 +10,12 @@ import {
 } from 'lucide-react';
 
 const TABLE_LABELS = {
-  parts_categories: 'Kategorije dijelova',
-  parts: 'Polovni dijelovi',
+  parts_categories: 'Kategorije delova',
+  parts: 'Polovni delovi',
   clients: 'Klijenti',
   tickets: 'Servisni nalozi',
-  parts_sales: 'Prodaja dijelova (stara)',
-  parts_sales_new: 'Prodaja dijelova',
+  parts_sales: 'Prodaja delova (stara)',
+  parts_sales_new: 'Prodaja delova',
   users: 'Korisnici sistema',
 };
 
@@ -103,7 +103,7 @@ const BackupTabContent = () => {
             </h2>
             <p className="text-slate-400 mt-2 max-w-2xl">
               Preuzmite kompletan JSON backup baze: naloge (uključujući korpu), klijente,
-              dijelove, prodaju, korisnike i lokalnu korpu iz pregledača.
+              delove, prodaju, korisnike i lokalnu korpu iz pregledača.
             </p>
           </div>
           <Button
@@ -226,7 +226,7 @@ const BackupTabContent = () => {
             <ul className="space-y-1.5 list-disc list-inside">
               <li>Backup ne sadrži lozinke korisnika.</li>
               <li>Kompletan backup zahtijeva <code className="text-slate-300">SUPABASE_SERVICE_ROLE_KEY</code> u .env.</li>
-              <li>Preporuka: backup jednom dnevno ili prije većih promjena.</li>
+              <li>Preporuka: backup jednom dnevno ili pre većih promena.</li>
               <li>Za vraćanje podataka koristite <code className="text-slate-300">npm run import-data</code>.</li>
             </ul>
           </div>
