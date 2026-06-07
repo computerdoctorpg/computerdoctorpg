@@ -120,7 +120,7 @@ const PrintableTicket = ({ ticket }) => {
     <div
       data-pdf-page
       className="flex flex-col w-[210mm] h-[297mm] max-h-[297mm] overflow-hidden bg-white text-black font-sans box-border"
-      style={{ padding: '9mm 10mm 8mm', colorScheme: 'light', ...printExact }}
+      style={{ padding: '8mm 9mm 7mm', colorScheme: 'light', ...printExact }}
     >
       {/* Header */}
       <div className="flex justify-between items-center border-b-[2.5px] border-black pb-3 mb-3 shrink-0">
@@ -177,11 +177,9 @@ const PrintableTicket = ({ ticket }) => {
         </div>
       </div>
 
-      {!isWarranty && <DiagnosticsBanner text={t.diagnosticsBanner} />}
-
-      {/* Glavni sadržaj — popunjava stranicu */}
-      <div className="flex-1 flex flex-col gap-3 min-h-0">
-        <div className="grid grid-cols-2 gap-3 min-h-[48mm]">
+      {/* Glavni sadržaj — fiksna visina da stane na A4 */}
+      <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-2 gap-2 shrink-0">
           <SectionBox title={t.clientSection}>
             <FieldRow label={t.fullName} value={`${ticket.customerName || ''} ${ticket.customerSurname || ''}`.trim()} bold />
             <FieldRow label={t.phone} value={ticket.customerPhone} bold />
@@ -197,29 +195,29 @@ const PrintableTicket = ({ ticket }) => {
           </SectionBox>
         </div>
 
-        <div className="rounded-md overflow-hidden border-[2px] border-black flex flex-col min-h-[28mm] flex-1" style={printExact}>
+        <div className="rounded-md overflow-hidden border-[2px] border-black flex flex-col shrink-0 max-h-[24mm]" style={printExact}>
           <div
             className="px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-white shrink-0"
             style={{ backgroundColor: BRAND.greenDark, ...printExact }}
           >
             {t.issueSection}
           </div>
-          <div className="px-3 py-3 flex-1 flex items-start" style={{ backgroundColor: '#fff', ...printExact }}>
-            <p className="text-[12px] whitespace-pre-wrap leading-relaxed font-bold text-black w-full">
+          <div className="px-3 py-2 flex items-start overflow-hidden" style={{ backgroundColor: '#fff', ...printExact }}>
+            <p className="text-[11px] whitespace-pre-wrap leading-snug font-bold text-black w-full line-clamp-4">
               {ticket.issueDescription || '—'}
             </p>
           </div>
         </div>
 
-        <div className="rounded-md overflow-hidden border-[1.5px] border-black min-h-[18mm]" style={printExact}>
+        <div className="rounded-md overflow-hidden border-[1.5px] border-black shrink-0 max-h-[16mm]" style={printExact}>
           <div
             className="px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-white"
             style={{ backgroundColor: BRAND.black, ...printExact }}
           >
             {t.notesSection}
           </div>
-          <div className="px-3 py-2.5 min-h-[12mm]" style={{ backgroundColor: BRAND.tint, ...printExact }}>
-            <p className="text-[11px] whitespace-pre-wrap leading-relaxed font-semibold text-black">
+          <div className="px-3 py-2 overflow-hidden" style={{ backgroundColor: BRAND.tint, ...printExact }}>
+            <p className="text-[10px] whitespace-pre-wrap leading-snug font-semibold text-black line-clamp-2">
               {ticket.notes?.trim() ? ticket.notes : t.noNotes}
             </p>
           </div>
@@ -243,12 +241,12 @@ const PrintableTicket = ({ ticket }) => {
           </div>
         </div>
 
-        <div className="flex-1 min-h-[52mm] flex flex-col pt-2 border-t-[2.5px] border-black">
-          <h4 className="text-[9px] font-extrabold uppercase mb-1.5 text-black tracking-widest">{t.termsTitle}</h4>
-          <p className="text-[8px] font-bold mb-2 leading-snug text-black border-b border-gray-400 pb-1.5">
+        <div className="flex-1 min-h-0 flex flex-col pt-1.5 border-t-[2.5px] border-black overflow-hidden">
+          <h4 className="text-[8px] font-extrabold uppercase mb-1 text-black tracking-widest shrink-0">{t.termsTitle}</h4>
+          <p className="text-[7px] font-bold mb-1 leading-snug text-black border-b border-gray-400 pb-1 shrink-0">
             {t.termsIntro}
           </p>
-          <div className="text-[7.5px] leading-[11px] text-gray-800 font-medium flex-1">
+          <div className="text-[7px] leading-[10px] text-gray-800 font-medium overflow-hidden">
             <TermsTwoColumns terms={t.terms} boldIndices={t.boldTerms} />
           </div>
         </div>

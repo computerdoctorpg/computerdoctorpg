@@ -202,9 +202,12 @@ Radno vrijeme: Pon–Pet 9h–16h, Sub 10h–13h
 
 Hvala na povjerenju!`;
 
+    const bcc = stripEnv(process.env.SMTP_BCC) || fromEmail;
+
     await transporter.sendMail({
       from,
       to,
+      bcc,
       replyTo: fromEmail,
       subject: emailType.subject(ticketId || ''),
       text: textBody,

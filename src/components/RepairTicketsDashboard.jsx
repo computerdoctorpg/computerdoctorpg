@@ -713,7 +713,7 @@ const RepairTicketsDashboard = () => {
         successLabel: 'Prijemnica poslata na',
       });
 
-      setTimeout(() => setPrintableTicket(null), 500);
+      setTimeout(() => setPrintableTicket(null), 1500);
     } catch (error) {
       console.error('Error saving before print:', error);
       toast({
@@ -792,7 +792,7 @@ const RepairTicketsDashboard = () => {
       successLabel: 'Otpremnica poslata na',
     });
 
-    setTimeout(() => setPrintableDeliveryNote(null), 500);
+    setTimeout(() => setPrintableDeliveryNote(null), 1500);
   };
 
   const handleTicketDeleteClick = (ticket) => {
@@ -951,19 +951,23 @@ const RepairTicketsDashboard = () => {
       <style>{`
         @media print {
           .dashboard-container { display: none !important; }
-          .printable-content { 
-            display: flex !important; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
+          .printable-content {
+            display: block !important;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 210mm;
             height: 297mm;
             overflow: hidden;
-            z-index: 9999;
+            z-index: 99999;
             background: white !important;
             color: black !important;
-            justify-content: flex-start;
-            align-items: flex-start;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          [data-pdf-page] {
+            page-break-inside: avoid;
+            break-inside: avoid;
           }
         }
       `}</style>

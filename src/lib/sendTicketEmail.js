@@ -7,6 +7,7 @@ export async function sendTicketEmail({
   customerName,
   ticket,
   filename,
+  pdfBase64,
 }) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
@@ -30,6 +31,7 @@ export async function sendTicketEmail({
       customerName,
       filename,
       ticket,
+      ...(pdfBase64 ? { pdfBase64 } : {}),
     }),
   });
 
