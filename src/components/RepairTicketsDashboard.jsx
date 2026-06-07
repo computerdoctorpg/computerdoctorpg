@@ -60,7 +60,6 @@ const RepairTicketsDashboard = () => {
   const [printableTicket, setPrintableTicket] = useState(null);
   const [printableVhsTicket, setPrintableVhsTicket] = useState(null);
   const [printableDeliveryNote, setPrintableDeliveryNote] = useState(null);
-  const skipPrintEffectRef = useRef(false);
   const toastRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -220,20 +219,6 @@ const RepairTicketsDashboard = () => {
     setFilterBrand('');
     setFilterModel('');
   };
-
-  useEffect(() => {
-    if (!printableVhsTicket) return;
-    if (skipPrintEffectRef.current) return;
-
-    const timer = setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        setPrintableVhsTicket(null);
-      }, 500);
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [printableVhsTicket]);
 
   const addTicket = async (ticketData) => {
     if (!user) {
@@ -653,9 +638,23 @@ const RepairTicketsDashboard = () => {
     const printTicket = payload?.printTicket ?? payload;
     try {
       const saved = await saveVhsChanges(saveTicket);
+      const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
+
       setIsVhsEditOpen(false);
       setIsNewVhsTicket(false);
-      setPrintableVhsTicket({ ...printTicket, id: saved.id, clientId: saved.clientId });
+
+      await runPrintAndEmailJob({
+        document: { type: 'intake', ticket: ticketForDoc },
+        emailJob: null,
+        renderForPrint: () => {
+          setPrintableTicket(null);
+          setPrintableDeliveryNote(null);
+          setPrintableVhsTicket(ticketForDoc);
+        },
+        toastRef,
+      });
+
+      setTimeout(() => setPrintableVhsTicket(null), 2000);
     } catch (error) {
       toast({ variant: 'destructive', title: 'Greška', description: error.message || 'Neuspešno čuvanje pre štampe.' });
       throw error;
@@ -688,7 +687,6 @@ const RepairTicketsDashboard = () => {
       const saved = await savePrijemniListChanges(saveTicket);
 
       const ticketForDoc = { ...printTicket, id: saved.id, clientId: saved.clientId };
-      console.log('[prijemnica] sendEmail flag:', payload?.sendEmail, '| email:', saveTicket.customerEmail);
       const emailJob = payload?.sendEmail && saveTicket.customerEmail?.trim()
         ? {
             type: 'intake',
@@ -699,6 +697,9 @@ const RepairTicketsDashboard = () => {
             ticket: ticketForDoc,
           }
         : null;
+
+      setIsPrijemniEditOpen(false);
+      setIsNewPrijemniTicket(false);
 
       await runPrintAndEmailJob({
         document: { type: 'intake', ticket: ticketForDoc },
@@ -712,9 +713,7 @@ const RepairTicketsDashboard = () => {
         successLabel: 'Prijemnica poslata na',
       });
 
-      setIsPrijemniEditOpen(false);
-      setIsNewPrijemniTicket(false);
-      setTimeout(() => setPrintableTicket(null), 1500);
+      setTimeout(() => setPrintableTicket(null), 2000);
     } catch (error) {
       console.error('Error saving before print:', error);
       toast({
