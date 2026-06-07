@@ -26,6 +26,15 @@ const stripEnv = (value) => {
 };
 
 const decodeSmtpPass = (value) => {
+  const b64 = stripEnv(process.env.SMTP_PASS_B64);
+  if (b64) {
+    try {
+      return Buffer.from(b64, 'base64').toString('utf8');
+    } catch {
+      // fall through
+    }
+  }
+
   const pass = stripEnv(value);
   if (!pass) return '';
   if (pass.includes('%')) {
@@ -44,13 +53,13 @@ const getSmtpConfig = () => ({
   secure: process.env.SMTP_SECURE !== 'false',
   auth: {
     user: stripEnv(process.env.SMTP_USER),
-    pass: stripEnv(process.env.SMTP_PASS),
+    pass: decodeSmtpPass(process.env.SMTP_PASS),
   },
 });
 
 export const isEmailConfigured = () => {
   const cfg = getSmtpConfig();
-  return Boolean(cfg.host && cfg.auth.user && cfg.auth.pass);
+  return Boolean(cfg.host && cfg.auth.user && (cfg.auth.pass || stripEnv(process.env.SMTP_PASS_B64)));
 };
 
 const getAppLoginUrl = () =>
