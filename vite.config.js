@@ -53,6 +53,14 @@ const emailApiPlugin = (env) => ({
       process.env.VITE_SUPABASE_URL = env.VITE_SUPABASE_URL;
       process.env.VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY;
       process.env.SUPABASE_SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env.SMTP_HOST = env.SMTP_HOST;
+      process.env.SMTP_PORT = env.SMTP_PORT;
+      process.env.SMTP_USER = env.SMTP_USER;
+      process.env.SMTP_PASS = env.SMTP_PASS;
+      process.env.SMTP_FROM = env.SMTP_FROM;
+      process.env.SMTP_FROM_NAME = env.SMTP_FROM_NAME;
+      process.env.SMTP_SECURE = env.SMTP_SECURE;
+      process.env.APP_LOGIN_URL = env.APP_LOGIN_URL || env.VITE_APP_URL;
       await handleAdminUsers(req, res);
     });
 

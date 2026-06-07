@@ -21,7 +21,14 @@ export function loadEnv() {
     process.exit(1);
   }
   const raw = fs.readFileSync(envPath, 'utf8');
-  const read = (key) => raw.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1]?.trim();
+  const read = (key) => {
+    let value = raw.match(new RegExp(`^${key}=(.+)$`, 'm'))?.[1]?.trim();
+    if (!value) return value;
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    return value;
+  };
   return {
     VITE_SUPABASE_URL: read('VITE_SUPABASE_URL'),
     VITE_SUPABASE_ANON_KEY: read('VITE_SUPABASE_ANON_KEY'),

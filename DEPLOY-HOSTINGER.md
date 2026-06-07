@@ -63,12 +63,18 @@ Ako `git push` traži lozinku → koristi **GitHub Personal Access Token** (Sett
 
 U Hostinger Node.js app → **Environment variables** dodaj **sve**:
 
-### Supabase (obavezno)
+### Supabase (obavezno — nova baza)
 
 | Key | Value |
 |-----|-------|
-| `VITE_SUPABASE_URL` | `https://wogcdrvkthkjaatwzknv.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | *(kopiraj iz lokalnog `.env`)* |
+| `VITE_SUPABASE_URL` | `https://jhspxxkershzrvjnbxnn.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | *(Supabase Dashboard → Settings → API → anon public)* |
+
+Brzo kopiranje svih varijabli iz lokalnog `.env`:
+
+```powershell
+npm run hostinger-env
+```
 
 ### SMTP — email prijemnice/otpremnice (obavezno)
 
@@ -102,7 +108,15 @@ Bez service role: login i nalozi rade, ali **kreiranje operatera** iz Admin pane
 
 1. Node.js app poveži na **`computerdoctor.in`** i **`www.computerdoctor.in`**
 2. SSL (HTTPS) — uključi / Auto SSL u Hostingeru
-3. Ako postoji stari **Horizon** deploy za isti domen → **ugasi ga** (samo jedan aktivan)
+3. Ako postoji stari **Horizon / Static site** deploy za isti domen → **ugasi ga** (samo jedan aktivan)
+4. **Provjera API-ja** (mora vratiti JSON, ne HTML):
+
+```powershell
+curl.exe -s -X POST https://www.computerdoctor.in/api/send-ticket-email -H "Content-Type: application/json" -d "{}"
+```
+
+- ✅ Ispravno: `{"error":"Morate biti ulogovani..."}` (401)
+- ❌ Pogrešno: `<!doctype html>` → još uvijek statički hosting, nije Node.js app
 
 ---
 
@@ -164,8 +178,9 @@ Zatim u Hostingeru **Redeploy** (ili auto-deploy ako je uključen).
 |---------|----------|
 | Bijela stranica | Provjeri env: `VITE_SUPABASE_URL` i `VITE_SUPABASE_ANON_KEY` |
 | Login ne radi | Supabase URL Configuration + tačni ključevi |
-| Email ne radi | SMTP env vars, lozinka u navodnicima, redeploy |
+| Email ne radi | SMTP env vars, lozinka u navodnicima, redeploy; provjeri curl gore |
 | Korpa samo lokalno | Mora `npm start` (Node app), ne statički hosting |
+| API vraća HTML | Ugasi Horizon/static deploy; uključi Node.js Web App sa `npm start` |
 | Build fail | Lokalno: `npm run build` — popravi greške pa push |
 | 502 / app ne starta | Start command mora biti `npm start`, Node 20+ |
 

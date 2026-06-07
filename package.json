@@ -15,6 +15,7 @@
     "reset-password": "node scripts/reset-admin-password.mjs",
     "migrate-data": "node scripts/migrate-data.mjs",
     "export-data": "node scripts/export-data.mjs",
+    "export-with-token": "node scripts/export-with-access-token.mjs",
     "backup": "node scripts/export-data.mjs",
     "setup-korpa": "node scripts/setup-korpa.mjs",
     "import-data": "node scripts/import-data.mjs",

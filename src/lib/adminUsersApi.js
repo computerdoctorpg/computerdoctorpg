@@ -23,10 +23,9 @@ async function upsertOperatorProfile(userId, email, displayName) {
 }
 
 const SERVICE_KEY_ERROR =
-  'Kreiranje operatera zahtijeva SUPABASE_SERVICE_ROLE_KEY u .env (lokalno) ili na Hostingeru. ' +
-  'Bez toga Supabase šalje potvrdu na lažne adrese (operater.x@computerdoctor.in) i blokira projekat.';
+  'Kreiranje zaposlenog zahtijeva SUPABASE_SERVICE_ROLE_KEY u .env (lokalno) ili na Hostingeru.';
 
-export async function createOperatorAccount(displayName, password) {
+export async function createOperatorAccount({ email, displayName, password, sendWelcomeEmail = true }) {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !sessionData?.session) {
     throw new Error('Sesija nije pronađena. Molimo prijavite se ponovo.');
@@ -40,8 +39,10 @@ export async function createOperatorAccount(displayName, password) {
     },
     body: JSON.stringify({
       action: 'create',
+      email,
       displayName,
       password,
+      sendWelcomeEmail,
     }),
   });
 

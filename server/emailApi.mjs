@@ -26,10 +26,54 @@ const getSmtpConfig = () => ({
   },
 });
 
-const isEmailConfigured = () => {
+export const isEmailConfigured = () => {
   const cfg = getSmtpConfig();
   return Boolean(cfg.host && cfg.auth.user && cfg.auth.pass);
 };
+
+const getAppLoginUrl = () =>
+  process.env.APP_LOGIN_URL || process.env.VITE_APP_URL || 'https://www.computerdoctor.in';
+
+export async function sendOperaterWelcomeEmail({ to, displayName, password }) {
+  if (!isEmailConfigured()) {
+    throw new Error('SMTP nije podešen na serveru.');
+  }
+
+  const fromName = process.env.SMTP_FROM_NAME || 'Computer Doctor';
+  const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
+  const from = `${fromName} <${fromEmail}>`;
+  const loginUrl = getAppLoginUrl();
+  const greeting = displayName ? `Poštovani/a ${displayName}` : 'Poštovani/a';
+
+  const textBody = `${greeting},
+
+administrator vam je kreirao nalog za PC Servis aplikaciju (Computer Doctor).
+
+Email za prijavu: ${to}
+Lozinka: ${password}
+
+Link za prijavu: ${loginUrl}
+
+Nakon prijave možete kreirati prijemnice, otpremnice i raditi sa servisnim nalozima prema vašim ovlašćenjima.
+
+Molimo sačuvajte ovaj email na sigurnom mjestu i promijenite lozinku kada budete imali priliku.
+
+Computer Doctor
+Bul. Ibrahima Koristovica bb, Podgorica
+Tel: 068/862-807
+Email: prodaja@computer-doctor.me`;
+
+  const transporter = nodemailer.createTransport(getSmtpConfig());
+
+  await transporter.sendMail({
+    from,
+    to,
+    replyTo: fromEmail,
+    subject: 'Computer Doctor — pristup servisnoj aplikaciji',
+    text: textBody,
+    html: textBody.replace(/\n/g, '<br>'),
+  });
+}
 
 async function verifyAuthToken(authHeader) {
   const token = authHeader?.replace(/^Bearer\s+/i, '');

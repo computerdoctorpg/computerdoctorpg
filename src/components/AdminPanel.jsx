@@ -32,6 +32,7 @@ const AdminPanel = () => {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [operatorEmail, setOperatorEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [userToDelete, setUserToDelete] = useState(null);
@@ -93,32 +94,50 @@ const AdminPanel = () => {
 
   const handleCreateOperator = async (e) => {
     e.preventDefault();
+    const email = operatorEmail.trim().toLowerCase();
     const name = displayName.trim();
-    if (!name || !password) return;
+    if (!email || !password) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ variant: 'destructive', title: 'Greška', description: 'Unesite ispravnu email adresu.' });
+      return;
+    }
     if (password.length < 6) {
-      toast({ variant: "destructive", title: "Greška", description: "Lozinka mora imati bar 6 karaktera." });
+      toast({ variant: 'destructive', title: 'Greška', description: 'Lozinka mora imati bar 6 karaktera.' });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const result = await createOperatorAccount(name, password);
-
-      toast({
-        title: "Uspešno",
-        description: `Operater "${name}" kreiran. Prijava: ime "${result.loginHint || name}" + lozinka.`,
-        className: "bg-green-600 text-white"
+      const result = await createOperatorAccount({
+        email,
+        displayName: name,
+        password,
+        sendWelcomeEmail: true,
       });
 
+      let description = `Nalog za ${email} kreiran.`;
+      if (result.emailSent) {
+        description += ' Email sa pristupom poslat.';
+      } else if (result.emailError) {
+        description += ` Email nije poslat: ${result.emailError}`;
+      }
+
+      toast({
+        title: result.emailSent ? 'Uspešno' : 'Nalog kreiran',
+        description,
+        className: result.emailSent ? 'bg-green-600 text-white' : undefined,
+      });
+
+      setOperatorEmail('');
       setDisplayName('');
       setPassword('');
       fetchUsers();
     } catch (error) {
       console.error('Create user error detailed:', error);
       toast({
-        variant: "destructive",
-        title: "Greška pri kreiranju",
-        description: error.message || "Došlo je do greške prilikom kreiranja operatera.",
+        variant: 'destructive',
+        title: 'Greška pri kreiranju',
+        description: error.message || 'Došlo je do greške prilikom kreiranja operatera.',
       });
     } finally {
       setIsSubmitting(false);
@@ -185,22 +204,32 @@ const AdminPanel = () => {
                   Novi Operater
                 </h2>
                 <p className="text-sm text-slate-400">
-                  Unesite ime i lozinku. Operater se prijavljuje samo imenom (bez emaila).
+                  Unesite email, ime i lozinku. Zaposleni dobija email sa pristupom i linkom za prijavu.
                 </p>
               </div>
               <div className="p-6 pt-0">
                 <form onSubmit={handleCreateOperator} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="displayName" className="text-slate-200">Ime operatera</Label>
+                    <Label htmlFor="operatorEmail" className="text-slate-200">Email zaposlenog</Label>
+                    <Input
+                      id="operatorEmail"
+                      type="email"
+                      value={operatorEmail}
+                      onChange={(e) => setOperatorEmail(e.target.value)}
+                      className="bg-slate-950 border-slate-600 text-white placeholder:text-slate-500"
+                      placeholder="marko@gmail.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName" className="text-slate-200">Ime i prezime</Label>
                     <Input
                       id="displayName"
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       className="bg-slate-950 border-slate-600 text-white placeholder:text-slate-500"
-                      placeholder="npr. Marko"
-                      required
-                      minLength={2}
+                      placeholder="npr. Marko Petrović"
                     />
                   </div>
                   <div className="space-y-2">
@@ -263,7 +292,7 @@ const AdminPanel = () => {
                                   <p className="text-[11px] text-slate-500 mt-0.5">Prijava: {label.toLowerCase()}</p>
                                 )}
                                 {!isOperatorInternalEmail(u.email) && (
-                                  <p className="text-[11px] text-slate-400 mt-0.5">{u.email}</p>
+                                  <p className="text-[11px] text-slate-400 mt-0.5">Prijava: {u.email}</p>
                                 )}
                               </td>
                               <td className="px-4 py-3">

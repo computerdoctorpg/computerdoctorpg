@@ -40,9 +40,26 @@ export async function sendTicketEmail({
     }),
   });
 
-  const data = await response.json().catch(() => ({}));
+  const contentType = response.headers.get('content-type') || '';
+  const raw = await response.text();
+  let data = {};
+  if (contentType.includes('application/json')) {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      data = {};
+    }
+  } else if (raw.trimStart().startsWith('<!')) {
+    throw new Error(
+      'Email API nije dostupan na serveru. Na Hostingeru mora biti Node.js aplikacija (npm start), ne statički hosting.'
+    );
+  }
+
   if (!response.ok) {
     throw new Error(data.error || 'Email nije poslat.');
+  }
+  if (!data.ok) {
+    throw new Error(data.error || 'Email API nije vratio potvrdu slanja.');
   }
   return data;
 }

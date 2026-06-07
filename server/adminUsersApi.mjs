@@ -1,23 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
-import { readJsonBody } from './emailApi.mjs';
+import { readJsonBody, sendOperaterWelcomeEmail, isEmailConfigured } from './emailApi.mjs';
 
-const OPERATER_EMAIL_DOMAIN = 'computerdoctor.in';
+const ADMIN_EMAIL = 'prodaja@computer-doctor.me';
 
-const normalizeOperatorUsername = (value) =>
-  String(value || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '.')
-    .replace(/[^a-z0-9._-]/g, '')
-    .replace(/\.+/g, '.')
-    .replace(/^\.+|\.+$/g, '');
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 
-const usernameToOperatorEmail = (username) => {
-  const slug = normalizeOperatorUsername(username);
-  if (!slug) return '';
-  return `operater.${slug}@${OPERATER_EMAIL_DOMAIN}`;
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const displayNameFromEmail = (email) => {
+  const local = email.split('@')[0] || '';
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 };
 
 function getSupabaseConfig() {
@@ -39,7 +35,7 @@ async function verifyAdmin(authHeader) {
   if (error || !data?.user) return null;
 
   const user = data.user;
-  const isAdminEmail = user.email?.toLowerCase() === 'prodaja@computer-doctor.me';
+  const isAdminEmail = user.email?.toLowerCase() === ADMIN_EMAIL;
 
   if (!serviceKey) {
     if (isAdminEmail) return user;
@@ -115,12 +111,20 @@ export async function handleAdminUsers(req, res) {
     const action = body.action || 'create';
 
     if (action === 'create') {
-      const displayName = String(body.displayName || body.name || '').trim();
+      const email = normalizeEmail(body.email);
       const password = String(body.password || '');
+      const displayName = String(body.displayName || body.name || '').trim() || displayNameFromEmail(email);
+      const sendWelcomeEmail = body.sendWelcomeEmail !== false;
 
-      if (!displayName || displayName.length < 2) {
+      if (!isValidEmail(email)) {
         res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Ime operatera mora imati bar 2 karaktera.' }));
+        res.end(JSON.stringify({ error: 'Unesite ispravnu email adresu zaposlenog.' }));
+        return;
+      }
+
+      if (email === ADMIN_EMAIL) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: 'Admin email se ne može koristiti za operatera.' }));
         return;
       }
 
@@ -130,10 +134,11 @@ export async function handleAdminUsers(req, res) {
         return;
       }
 
-      const email = usernameToOperatorEmail(displayName);
-      if (!email) {
-        res.writeHead(400);
-        res.end(JSON.stringify({ error: 'Neispravno ime operatera.' }));
+      if (sendWelcomeEmail && !isEmailConfigured()) {
+        res.writeHead(503);
+        res.end(JSON.stringify({
+          error: 'SMTP nije podešen. Dodajte SMTP varijable na serveru ili isključite slanje emaila.',
+        }));
         return;
       }
 
@@ -142,9 +147,7 @@ export async function handleAdminUsers(req, res) {
         res.writeHead(503);
         res.end(JSON.stringify({
           error: 'MISSING_SERVICE_ROLE_KEY',
-          message:
-            'Dodajte SUPABASE_SERVICE_ROLE_KEY u .env. Kreiranje operatera mora ići preko admin API-ja ' +
-            'da Supabase ne šalje potvrdu na lažne adrese.',
+          message: 'Dodajte SUPABASE_SERVICE_ROLE_KEY u .env / Hostinger.',
         }));
         return;
       }
@@ -157,7 +160,7 @@ export async function handleAdminUsers(req, res) {
 
       if (existingProfile) {
         res.writeHead(409);
-        res.end(JSON.stringify({ error: `Operater "${displayName}" već postoji.` }));
+        res.end(JSON.stringify({ error: `Nalog sa emailom "${email}" već postoji.` }));
         return;
       }
 
@@ -172,6 +175,19 @@ export async function handleAdminUsers(req, res) {
 
       await upsertOperatorProfile(adminClient, created.user.id, email, displayName);
 
+      let emailSent = false;
+      let emailError = null;
+
+      if (sendWelcomeEmail) {
+        try {
+          await sendOperaterWelcomeEmail({ to: email, displayName, password });
+          emailSent = true;
+        } catch (error) {
+          emailError = error.message || 'Greška pri slanju emaila.';
+          console.error('Operater welcome email error:', error);
+        }
+      }
+
       res.writeHead(200);
       res.end(JSON.stringify({
         ok: true,
@@ -181,7 +197,9 @@ export async function handleAdminUsers(req, res) {
           displayName,
           role: 'operater',
         },
-        loginHint: displayName,
+        loginHint: email,
+        emailSent,
+        emailError,
       }));
       return;
     }
@@ -215,7 +233,7 @@ export async function handleAdminUsers(req, res) {
         return;
       }
 
-      if (profile.role === 'admin' || profile.email === 'prodaja@computer-doctor.me') {
+      if (profile.role === 'admin' || profile.email === ADMIN_EMAIL) {
         res.writeHead(403);
         res.end(JSON.stringify({ error: 'Admin nalog se ne može obrisati.' }));
         return;

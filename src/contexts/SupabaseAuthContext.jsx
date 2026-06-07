@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getOperatorDisplayName } from '@/lib/operatorAuth';
+import { fetchUserProfile } from '@/lib/fetchUserProfile';
 
 const AuthContext = createContext(undefined);
 
@@ -36,18 +37,9 @@ export const AuthProvider = ({ children }) => {
         let displayName = '';
         if (activeUser?.id) {
           try {
-            const { data, error } = await supabase
-              .from('users')
-              .select('role, display_name')
-              .eq('id', activeUser.id)
-              .maybeSingle();
-
-            if (error) {
-              console.error('Error fetching user role from database:', error);
-            } else {
-              if (data?.role) role = data.role;
-              displayName = data?.display_name || '';
-            }
+            const data = await fetchUserProfile(supabase, activeUser.id);
+            if (data?.role) role = data.role;
+            displayName = data?.display_name || '';
           } catch (roleError) {
             console.error('Unexpected exception while fetching user role:', roleError);
           }
