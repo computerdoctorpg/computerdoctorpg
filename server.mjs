@@ -37,10 +37,11 @@ const runtimeEnv = {
 const envScript = `<script>window.__ENV__=${JSON.stringify(runtimeEnv)};</script>`;
 
 const mimeTypes = {
-  '.html': 'text/html',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -51,6 +52,35 @@ const mimeTypes = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
 };
+
+function isStaticAssetPath(urlPath) {
+  return (
+    urlPath.startsWith('/assets/')
+    || urlPath.startsWith('/images/')
+    || urlPath.startsWith('/fonts/')
+    || /\.(js|mjs|css|png|jpe?g|gif|svg|ico|webp|woff2?|json|map|txt|xml|webmanifest)$/i.test(urlPath)
+  );
+}
+
+function shouldServeSpaIndex(urlPath) {
+  if (urlPath.startsWith('/api/')) return false;
+  if (urlPath === '/env.js') return false;
+  if (isStaticAssetPath(urlPath)) return false;
+  return true;
+}
+
+function getCacheControl(urlPath, ext) {
+  if (ext === '.html' || urlPath === '/') {
+    return 'no-cache, no-store, must-revalidate';
+  }
+  if (urlPath.startsWith('/assets/')) {
+    return 'public, max-age=31536000, immutable';
+  }
+  if (urlPath === '/env.js') {
+    return 'no-cache, no-store, must-revalidate';
+  }
+  return undefined;
+}
 
 createServer(async (req, res) => {
   const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
@@ -86,29 +116,40 @@ createServer(async (req, res) => {
 
   let filePath = join(distDir, urlPath === '/' ? 'index.html' : urlPath);
 
-  if (!existsSync(filePath) || urlPath.endsWith('/')) {
-    filePath = join(distDir, 'index.html');
+  if (!existsSync(filePath)) {
+    if (shouldServeSpaIndex(urlPath)) {
+      filePath = join(distDir, 'index.html');
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Not found');
+      return;
+    }
   }
 
   if (!existsSync(filePath)) {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Not found');
     return;
   }
 
   const ext = extname(filePath);
+  const cacheControl = getCacheControl(urlPath, ext);
+  const headers = {
+    'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+    ...(cacheControl ? { 'Cache-Control': cacheControl } : {}),
+  };
 
   if (ext === '.html') {
     let html = readFileSync(filePath, 'utf8');
     if (!html.includes('window.__ENV__')) {
       html = html.replace('</head>', `${envScript}</head>`);
     }
-    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.writeHead(200, headers);
     res.end(html);
     return;
   }
 
-  res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+  res.writeHead(200, headers);
   res.end(readFileSync(filePath));
 }).listen(port, '0.0.0.0', () => {
   console.log(`PC Servis Admin running on port ${port}`);
