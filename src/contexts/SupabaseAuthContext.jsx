@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const sessionRunRef = useRef(0);
+  const initialSessionHandledRef = useRef(false);
 
   const clearLocalAuthData = useCallback(() => {
     try {
@@ -29,12 +30,11 @@ export const AuthProvider = ({ children }) => {
     const runId = ++sessionRunRef.current;
     const isFreshAuth = FRESH_AUTH_EVENTS.has(event);
 
-    if (currentSession?.user) {
-      try {
+    try {
+      if (currentSession?.user) {
         let activeSession = currentSession;
         let activeUser = currentSession.user;
 
-        // Validiraj samo keširanu sesiju pri učitavanju — ne odmah posle uspešnog logina
         if (!isFreshAuth) {
           const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
           if (runId !== sessionRunRef.current) return;
@@ -55,7 +55,6 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
                 setSession(null);
                 clearLocalAuthData();
-                setLoading(false);
                 return;
               }
 
@@ -86,30 +85,66 @@ export const AuthProvider = ({ children }) => {
           displayName: displayName || getOperatorDisplayName(activeUser),
         });
         setSession(activeSession);
-      } catch (err) {
+      } else {
         if (runId !== sessionRunRef.current) return;
-        console.error('Unexpected error during session handling:', err);
         setUser(null);
         setSession(null);
-        clearLocalAuthData();
       }
-    } else {
+    } catch (err) {
       if (runId !== sessionRunRef.current) return;
+      console.error('Unexpected error during session handling:', err);
       setUser(null);
       setSession(null);
-    }
-
-    if (runId === sessionRunRef.current) {
-      setLoading(false);
+      clearLocalAuthData();
+    } finally {
+      if (runId === sessionRunRef.current) {
+        setLoading(false);
+      }
     }
   }, [clearLocalAuthData]);
 
   useEffect(() => {
     let mounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, nextSession) => {
+    const scheduleSession = (nextSession, event) => {
+      // Supabase: ne zovi auth API direktno unutar onAuthStateChange — deadlock
+      setTimeout(() => {
+        if (mounted) {
+          handleSession(nextSession, event);
+        }
+      }, 0);
+    };
+
+    supabase.auth.getSession()
+      .then(({ data: { session: initialSession }, error }) => {
         if (!mounted) return;
+        initialSessionHandledRef.current = true;
+        if (error) {
+          console.error('Error checking auth session:', error);
+          clearLocalAuthData();
+          setLoading(false);
+          return;
+        }
+        scheduleSession(initialSession, 'INITIAL_SESSION');
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        console.error('Error checking auth session:', error);
+        clearLocalAuthData();
+        setLoading(false);
+      });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, nextSession) => {
+        if (!mounted) return;
+
+        if (event === 'INITIAL_SESSION') {
+          if (!initialSessionHandledRef.current) {
+            initialSessionHandledRef.current = true;
+            scheduleSession(nextSession, event);
+          }
+          return;
+        }
 
         if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
           sessionRunRef.current += 1;
@@ -120,12 +155,17 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        await handleSession(nextSession, event);
+        scheduleSession(nextSession, event);
       },
     );
 
+    const safetyTimer = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 8000);
+
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [handleSession, clearLocalAuthData]);
@@ -145,7 +185,6 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = useCallback(async (email, password) => {
     try {
-      // Ukloni zastareli token pre nove prijave — sprečava race sa INITIAL_SESSION
       await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
       const { data, error } = await supabase.auth.signInWithPassword({
