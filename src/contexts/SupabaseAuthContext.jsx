@@ -1,54 +1,67 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { getOperatorDisplayName } from '@/lib/operatorAuth';
 import { fetchUserProfile } from '@/lib/fetchUserProfile';
 
 const AuthContext = createContext(undefined);
 
+const FRESH_AUTH_EVENTS = new Set(['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED']);
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const sessionRunRef = useRef(0);
 
-  // Helper to force clear local auth tokens
   const clearLocalAuthData = useCallback(() => {
     try {
-      Object.keys(localStorage).forEach(key => {
+      Object.keys(localStorage).forEach((key) => {
         if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
           localStorage.removeItem(key);
         }
       });
     } catch (e) {
-      console.warn("Could not clear localStorage:", e);
+      console.warn('Could not clear localStorage:', e);
     }
   }, []);
 
-  const handleSession = useCallback(async (currentSession) => {
+  const handleSession = useCallback(async (currentSession, event = 'UNKNOWN') => {
+    const runId = ++sessionRunRef.current;
+    const isFreshAuth = FRESH_AUTH_EVENTS.has(event);
+
     if (currentSession?.user) {
       try {
         let activeSession = currentSession;
         let activeUser = currentSession.user;
 
-        const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
-        if (validatedUser) {
-          activeUser = validatedUser;
-        } else if (userError) {
-          const staleSession =
-            /session/i.test(userError.message || '') ||
-            userError.status === 401 ||
-            userError.status === 403;
+        // Validiraj samo keširanu sesiju pri učitavanju — ne odmah posle uspešnog logina
+        if (!isFreshAuth) {
+          const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+          if (runId !== sessionRunRef.current) return;
 
-          if (staleSession) {
-            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-            if (refreshError || !refreshData?.session?.user) {
-              setUser(null);
-              setSession(null);
-              clearLocalAuthData();
-              setLoading(false);
-              return;
+          if (validatedUser) {
+            activeUser = validatedUser;
+          } else if (userError) {
+            const staleSession =
+              /session/i.test(userError.message || '') ||
+              userError.status === 401 ||
+              userError.status === 403;
+
+            if (staleSession) {
+              const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+              if (runId !== sessionRunRef.current) return;
+
+              if (refreshError || !refreshData?.session?.user) {
+                setUser(null);
+                setSession(null);
+                clearLocalAuthData();
+                setLoading(false);
+                return;
+              }
+
+              activeSession = refreshData.session;
+              activeUser = refreshData.session.user;
             }
-            activeSession = refreshData.session;
-            activeUser = refreshData.session.user;
           }
         }
 
@@ -57,6 +70,7 @@ export const AuthProvider = ({ children }) => {
         if (activeUser?.id) {
           try {
             const data = await fetchUserProfile(supabase, activeUser.id);
+            if (runId !== sessionRunRef.current) return;
             if (data?.role) role = data.role;
             displayName = data?.display_name || '';
           } catch (roleError) {
@@ -64,64 +78,50 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
-        const enrichedUser = {
+        if (runId !== sessionRunRef.current) return;
+
+        setUser({
           ...activeUser,
           role,
           displayName: displayName || getOperatorDisplayName(activeUser),
-        };
-
-        setUser(enrichedUser);
+        });
         setSession(activeSession);
       } catch (err) {
+        if (runId !== sessionRunRef.current) return;
         console.error('Unexpected error during session handling:', err);
         setUser(null);
         setSession(null);
         clearLocalAuthData();
       }
     } else {
+      if (runId !== sessionRunRef.current) return;
       setUser(null);
       setSession(null);
     }
-    setLoading(false);
+
+    if (runId === sessionRunRef.current) {
+      setLoading(false);
+    }
   }, [clearLocalAuthData]);
 
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
-        if (mounted) {
-          handleSession(session);
-        }
-      } catch (error) {
-        console.error('Error checking auth session:', error);
-        if (mounted) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, nextSession) => {
+        if (!mounted) return;
+
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          sessionRunRef.current += 1;
           setUser(null);
           setSession(null);
           clearLocalAuthData();
           setLoading(false);
+          return;
         }
-      }
-    };
 
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (mounted) {
-          if (_event === 'SIGNED_OUT' || _event === 'USER_DELETED') {
-            setUser(null);
-            setSession(null);
-            clearLocalAuthData();
-            setLoading(false);
-          } else {
-            handleSession(session);
-          }
-        }
-      }
+        await handleSession(nextSession, event);
+      },
     );
 
     return () => {
@@ -145,8 +145,11 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = useCallback(async (email, password) => {
     try {
+      // Ukloni zastareli token pre nove prijave — sprečava race sa INITIAL_SESSION
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
       return { data, error };
@@ -156,26 +159,23 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signOut = useCallback(async () => {
-    console.log("Attempting to sign out...");
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.warn("Supabase signOut returned an error:", error.message);
+        console.warn('Supabase signOut returned an error:', error.message);
       }
     } catch (error) {
-      console.error("Exception during signOut:", error);
+      console.error('Exception during signOut:', error);
     } finally {
-      // Always clear the local auth state regardless of server response
-      console.log("Forcing local auth state clear.");
+      sessionRunRef.current += 1;
       setUser(null);
       setSession(null);
       clearLocalAuthData();
-      return { error: null }; // Return success to allow UI to proceed
+      return { error: null };
     }
   }, [clearLocalAuthData]);
 
   const value = useMemo(() => {
-    // Explicitly check for the admin email to ensure strict access control
     const isAdminUser = user?.email === 'prodaja@computer-doctor.me' || user?.role === 'admin';
     const isOperaterUser = !isAdminUser;
 
