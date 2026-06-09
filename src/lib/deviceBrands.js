@@ -12,7 +12,7 @@ export const DEVICE_BRANDS = [
   { id: 'huawei', label: 'Huawei', iconSlug: 'huawei' },
   { id: 'honor', label: 'Honor', iconSlug: 'honor' },
   { id: 'lg', label: 'LG', iconSlug: 'lg' },
-  { id: 'gigabyte', label: 'Gigabyte', iconSlug: 'gigabyte' },
+  { id: 'gigabyte', label: 'Gigabyte' },
   { id: 'razer', label: 'Razer', iconSlug: 'razer' },
   { id: 'sony', label: 'Sony', iconSlug: 'sony', aliases: ['vaio'] },
   { id: 'fujitsu', label: 'Fujitsu', iconSlug: 'fujitsu' },

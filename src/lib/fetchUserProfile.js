@@ -1,39 +1,18 @@
-function isMissingDisplayNameColumn(error) {
-  if (!error) return false;
-  if (error.code === '42703') return true;
-  const text = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`;
-  return /display_name|does not exist/i.test(text);
-}
-
 /**
- * Učitava users profil — kompatibilno sa bazom bez display_name kolone.
+ * Učitava users profil. select('*') — ne pada ako display_name kolona još ne postoji.
  */
 export async function fetchUserProfile(supabase, userId) {
-  const { data: roleData, error: roleError } = await supabase
+  const { data, error } = await supabase
     .from('users')
-    .select('role')
+    .select('*')
     .eq('id', userId)
     .maybeSingle();
 
-  if (roleError) throw roleError;
-  if (!roleData) return null;
-
-  const { data: nameData, error: nameError } = await supabase
-    .from('users')
-    .select('display_name')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (nameError) {
-    if (isMissingDisplayNameColumn(nameError)) {
-      return { ...roleData, display_name: null };
-    }
-    console.warn('[users] display_name lookup failed:', nameError.message);
-    return { ...roleData, display_name: null };
-  }
+  if (error) throw error;
+  if (!data) return null;
 
   return {
-    ...roleData,
-    display_name: nameData?.display_name ?? null,
+    role: data.role,
+    display_name: data.display_name ?? null,
   };
 }
